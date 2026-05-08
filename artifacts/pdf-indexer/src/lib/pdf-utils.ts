@@ -77,12 +77,39 @@ export async function analyzePdfPages(file: File): Promise<PageAnalysis[]> {
 }
 
 /**
- * Given a main code like "<A1>" and a 0-based position within the attachment:
- *   0 → "<A1>", 1 → "<A1-1>", 2 → "<A1-2>", ...
+ * The available index code formats:
+ *  simple  → <A1>, <A1-1>, <A1-2>, ...
+ *  sub     → <A1>, <A1-1>, <A1-1-1>, <A1-1-2>, ...  (first sub gets its own level)
+ *  deep    → <A1>, <A1-1-1>, <A1-1-2>, <A1-1-3>, ...  (all sub-pages 3 levels)
  */
-export function subIndexCode(mainCode: string, position: number): string {
+export type IndexFormat = 'simple' | 'sub' | 'deep';
+
+/**
+ * Given a main code like "<A1>", a 0-based position, and a format, returns the stamp code.
+ *
+ *  simple:
+ *    0 → <A1>   1 → <A1-1>   2 → <A1-2>   ...
+ *  sub:
+ *    0 → <A1>   1 → <A1-1>   2 → <A1-1-1>   3 → <A1-1-2>   ...
+ *  deep:
+ *    0 → <A1>   1 → <A1-1-1>   2 → <A1-1-2>   3 → <A1-1-3>   ...
+ */
+export function subIndexCode(mainCode: string, position: number, format: IndexFormat = 'simple'): string {
   if (position === 0) return mainCode;
   const base = mainCode.endsWith('>') ? mainCode.slice(0, -1) : mainCode;
+
+  if (format === 'deep') {
+    // All sub-pages: <A1-1-1>, <A1-1-2>, <A1-1-3>, ...
+    return `${base}-1-${position}>`;
+  }
+
+  if (format === 'sub') {
+    // position 1 → <A1-1>; positions 2+ → <A1-1-1>, <A1-1-2>, ...
+    if (position === 1) return `${base}-1>`;
+    return `${base}-1-${position - 1}>`;
+  }
+
+  // simple: <A1-1>, <A1-2>, <A1-3>, ...
   return `${base}-${position}>`;
 }
 
@@ -93,7 +120,8 @@ export function subIndexCode(mainCode: string, position: number): string {
 export function computeAttachmentIndices(
   pages: PageAnalysis[],
   mainCode: string,
-  overrides: Record<number, string>
+  overrides: Record<number, string>,
+  format: IndexFormat = 'simple'
 ): PageAnalysis[] {
   let position = 0;
   return pages.map((page) => {
@@ -105,7 +133,7 @@ export function computeAttachmentIndices(
       return { ...page, assignedIndex: code };
     }
 
-    const code = subIndexCode(mainCode, position);
+    const code = subIndexCode(mainCode, position, format);
     position++;
     return { ...page, assignedIndex: code };
   });

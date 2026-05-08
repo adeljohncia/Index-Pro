@@ -15,7 +15,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import {
   analyzePdfPages, generateThumbnails, computeAttachmentIndices,
-  processAndMergePdfs, generatePrintTemplateHtml, PageAnalysis,
+  processAndMergePdfs, generatePrintTemplateHtml, PageAnalysis, IndexFormat,
 } from '@/lib/pdf-utils';
 
 /* ─── Types ─────────────────────────────────────────────────────────────── */
@@ -30,6 +30,7 @@ function formatBytes(b: number) {
 interface GlobalSettings {
   prefix: string;
   startNumber: number;
+  format: IndexFormat;
   topMarginCm: number;
   sideMarginCm: number;
   fontSize: number;
@@ -140,7 +141,7 @@ export function IndexerHome() {
   const [previewEntryId, setPreviewEntryId] = useState<string | null>(null);
 
   const [settings, setSettings] = useState<GlobalSettings>({
-    prefix: 'A', startNumber: 1,
+    prefix: 'A', startNumber: 1, format: 'simple',
     topMarginCm: 0.5, sideMarginCm: 0.5,
     fontSize: 16, bold: false,
   });
@@ -152,8 +153,8 @@ export function IndexerHome() {
   const processedEntries = useMemo(() =>
     entries.map((e) => ({
       ...e,
-      pages: computeAttachmentIndices(e.pages, e.mainCode, overrides[e.id] ?? {}),
-    })), [entries, overrides]);
+      pages: computeAttachmentIndices(e.pages, e.mainCode, overrides[e.id] ?? {}, settings.format),
+    })), [entries, overrides, settings.format]);
 
   const totalStamps = useMemo(() => processedEntries.reduce((s, e) => s + e.pages.filter((p) => p.assignedIndex).length, 0), [processedEntries]);
   const totalPages  = useMemo(() => entries.reduce((s, e) => s + e.pages.length, 0), [entries]);
@@ -161,9 +162,16 @@ export function IndexerHome() {
   const totalSize   = useMemo(() => entries.reduce((s, e) => s + e.file.size, 0), [entries]);
   const anyAnalyzing = entries.some((e) => e.isAnalyzing);
 
-  /* Live preview code */
-  const previewCode = `<${settings.prefix}${settings.startNumber}>`;
-  const previewSub  = `<${settings.prefix}${settings.startNumber}-1>`;
+  /* Live preview codes — vary by format */
+  const previewCode  = `<${settings.prefix}${settings.startNumber}>`;
+  const previewPage2 = settings.format === 'deep'
+    ? `<${settings.prefix}${settings.startNumber}-1-1>`
+    : `<${settings.prefix}${settings.startNumber}-1>`;
+  const previewPage3 = settings.format === 'simple'
+    ? `<${settings.prefix}${settings.startNumber}-2>`
+    : settings.format === 'sub'
+      ? `<${settings.prefix}${settings.startNumber}-1-1>`
+      : `<${settings.prefix}${settings.startNumber}-1-2>`;
 
   /* ── File loading ──────────────────────────────────────────────────────── */
   const loadEntry = useCallback(async (entry: PdfEntry) => {
@@ -449,26 +457,46 @@ export function IndexerHome() {
                 </div>
                 <div className="mb-4">
                   <FieldLabel>Format</FieldLabel>
-                  <Select defaultValue="simple">
+                  <Select value={settings.format} onValueChange={(v) => updateSetting('format', v as IndexFormat)}>
                     <SelectTrigger className="h-9 text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="simple">{'<A1>'} — simple (e.g. {previewCode})</SelectItem>
-                      <SelectItem value="sub">{'<A1-1>'} — with sub-index (e.g. {previewSub})</SelectItem>
+                      <SelectItem value="simple">
+                        <span className="font-mono text-xs">{'<A1> <A1-1> <A1-2>'}</span>
+                        <span className="text-muted-foreground ml-2">— simple sub-index</span>
+                      </SelectItem>
+                      <SelectItem value="sub">
+                        <span className="font-mono text-xs">{'<A1> <A1-1> <A1-1-1>'}</span>
+                        <span className="text-muted-foreground ml-2">— two-level sub</span>
+                      </SelectItem>
+                      <SelectItem value="deep">
+                        <span className="font-mono text-xs">{'<A1> <A1-1-1> <A1-1-2>'}</span>
+                        <span className="text-muted-foreground ml-2">— three-level deep</span>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                {/* Preview */}
+                {/* Live preview — updates with format + prefix + startNumber */}
                 <div>
                   <FieldLabel>Preview</FieldLabel>
-                  <div className="rounded-lg bg-[#1a1d27] border border-white/10 px-4 py-3 flex items-center gap-3">
-                    <span className="text-white/40 text-xs font-mono uppercase tracking-widest">First page</span>
-                    <span className="font-mono text-base font-bold text-blue-400">{previewCode}</span>
-                    <span className="text-white/20 text-xs">·</span>
-                    <span className="text-white/40 text-xs font-mono uppercase tracking-widest">Sub-pages</span>
-                    <span className="font-mono text-base font-bold text-blue-300">{previewSub}</span>
-                    <span className="font-mono text-sm text-white/30">&hellip;</span>
+                  <div className="rounded-lg bg-[#1a1d27] border border-white/10 px-4 py-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-white/35 text-[10px] font-mono uppercase tracking-widest shrink-0">p.1</span>
+                      <span className="font-mono text-sm font-bold text-blue-400">{previewCode}</span>
+                      <span className="text-white/20 mx-1">→</span>
+                      <span className="text-white/35 text-[10px] font-mono uppercase tracking-widest shrink-0">p.2</span>
+                      <span className="font-mono text-sm font-bold text-blue-300">{previewPage2}</span>
+                      <span className="text-white/20 mx-1">→</span>
+                      <span className="text-white/35 text-[10px] font-mono uppercase tracking-widest shrink-0">p.3</span>
+                      <span className="font-mono text-sm font-bold text-blue-300">{previewPage3}</span>
+                      <span className="font-mono text-sm text-white/30 ml-1">&hellip;</span>
+                    </div>
+                    <p className="text-white/25 text-[10px] font-mono mt-2 leading-4">
+                      {settings.format === 'simple' && 'Pages numbered sequentially: A1 → A1-1 → A1-2 → …'}
+                      {settings.format === 'sub'    && 'First sub gets own level, then nests: A1 → A1-1 → A1-1-1 → …'}
+                      {settings.format === 'deep'   && 'All sub-pages stamped at 3rd level: A1 → A1-1-1 → A1-1-2 → …'}
+                    </p>
                   </div>
                 </div>
               </Panel>
