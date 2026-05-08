@@ -12,6 +12,34 @@ export interface PageAnalysis {
   assignedIndex: string | null;
 }
 
+/**
+ * Render each page of a PDF as a thumbnail data URL (JPEG, small scale).
+ * onProgress(index, total) called after each page.
+ */
+export async function generateThumbnails(
+  file: File,
+  onProgress?: (idx: number, total: number) => void
+): Promise<string[]> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const thumbnails: string[] = [];
+
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const scale = 0.35;
+    const viewport = page.getViewport({ scale });
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const context = canvas.getContext('2d', { willReadFrequently: true })!;
+    await page.render({ canvasContext: context, viewport, canvas }).promise;
+    thumbnails.push(canvas.toDataURL('image/jpeg', 0.75));
+    onProgress?.(i, pdf.numPages);
+  }
+
+  return thumbnails;
+}
+
 export async function analyzePdfPages(file: File): Promise<PageAnalysis[]> {
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;

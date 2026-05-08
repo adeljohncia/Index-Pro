@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>IndexStamp Pro - Document Indexing System</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-dim": "#1a1c1e",
+                        "secondary": "#90a4ae",
+                        "inverse-surface": "#e2e2e6",
+                        "outline": "#44474e",
+                        "on-primary-container": "#d1e4ff",
+                        "surface-tint": "#a8c7ff",
+                        "surface": "#111318",
+                        "primary-container": "#004789",
+                        "on-primary-fixed": "#001d35",
+                        "surface-container-high": "#2b2f33",
+                        "on-tertiary-fixed": "#311100",
+                        "inverse-primary": "#0061a4",
+                        "on-secondary": "#243240",
+                        "secondary-fixed": "#cfe5f9",
+                        "tertiary-container": "#514032",
+                        "outline-variant": "#43474e",
+                        "on-tertiary-fixed-variant": "#633b22",
+                        "on-secondary-fixed": "#0b1d29",
+                        "on-background": "#e2e2e6",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb68d",
+                        "primary": "#a8c7ff",
+                        "surface-container": "#1e2125",
+                        "secondary-fixed-dim": "#b3c9dd",
+                        "surface-container-highest": "#333538",
+                        "on-surface-variant": "#c4c6d0",
+                        "tertiary": "#ffb68d",
+                        "inverse-on-surface": "#1a1c1e",
+                        "error": "#ffb4ab",
+                        "on-surface": "#e2e2e6",
+                        "on-error": "#690005",
+                        "surface-variant": "#44474e",
+                        "on-primary": "#003258",
+                        "secondary-container": "#3a4856",
+                        "tertiary-fixed": "#ffdbcc",
+                        "on-secondary-container": "#d3e4f6",
+                        "primary-fixed": "#d1e4ff",
+                        "surface-bright": "#37393e",
+                        "on-secondary-fixed-variant": "#3a4856",
+                        "on-tertiary-container": "#ffdbcc",
+                        "on-primary-fixed-variant": "#004a78",
+                        "surface-container-lowest": "#0c0e12",
+                        "surface-container-low": "#1a1c1e",
+                        "on-error-container": "#ffdad6",
+                        "error-container": "#93000a",
+                        "background": "#111318",
+                        "primary-fixed-dim": "#a8c7ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "xl": "32px",
+                        "xs": "4px",
+                        "md": "16px",
+                        "base": "4px",
+                        "gutter": "12px",
+                        "sm": "8px",
+                        "lg": "24px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["IBM Plex Sans"],
+                        "data-mono": ["JetBrains Mono"],
+                        "label-caps": ["IBM Plex Sans"],
+                        "header-md": ["IBM Plex Sans"],
+                        "body-sm": ["IBM Plex Sans"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "data-mono": ["13px", {"lineHeight": "16px", "letterSpacing": "-0.02em", "fontWeight": "500"}],
+                        "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                        "header-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'IBM Plex Sans', sans-serif;
+            background-color: #111318;
+        }
+        .industrial-border {
+            border: 1px solid #333538;
+        }
+        .industrial-bg-dark {
+            background-color: #1e2125;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface">
+<!-- Desktop Sidebar (Matches Image 2 Dark Theme) -->
+<aside class="hidden md:flex fixed left-0 top-0 h-full w-72 industrial-bg-dark border-r border-outline-variant flex-col z-50">
+<div class="p-lg flex items-center gap-sm border-b border-outline-variant">
+<span class="material-symbols-outlined text-primary" data-icon="description">description</span>
+<span class="font-display-lg text-display-lg text-on-surface">Index Stamper <span class="bg-primary/20 text-primary text-[10px] px-1.5 py-0.5 rounded ml-1 align-middle">PRO</span></span>
+</div>
+<div class="flex-1 overflow-y-auto py-md px-sm">
+<nav class="flex flex-col gap-xs">
+<a class="flex items-center gap-md p-md bg-primary-container/30 text-primary rounded border-l-2 border-primary" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="dashboard" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-label-caps text-label-caps uppercase tracking-wider">Dashboard</span>
+</a>
+<a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container-highest rounded transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="page_control">page_control</span>
+<span class="font-label-caps text-label-caps uppercase tracking-wider">Processor</span>
+</a>
+<a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container-highest rounded transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="rule">rule</span>
+<span class="font-label-caps text-label-caps uppercase tracking-wider">Indexing Rules</span>
+</a>
+<a class="flex items-center gap-md p-md text-on-surface-variant hover:bg-surface-container-highest rounded transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="print">print</span>
+<span class="font-label-caps text-label-caps uppercase tracking-wider">Export Hub</span>
+</a>
+</nav>
+<div class="mt-xl pt-lg border-t border-outline-variant/30">
+<span class="px-md font-label-caps text-[10px] text-outline uppercase tracking-widest mb-xs block">System Status</span>
+<div class="px-md space-y-md">
+<div class="flex items-center justify-between">
+<span class="font-data-mono text-[11px] text-on-surface-variant">CPU LOAD</span>
+<div class="w-24 h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[24%]"></div>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<span class="font-data-mono text-[11px] text-on-surface-variant">ENGINE</span>
+<span class="font-data-mono text-[11px] text-green-400">ACTIVE</span>
+</div>
+</div>
+</div>
+</div>
+<div class="p-md border-t border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded bg-primary/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-[18px]" data-icon="person">person</span>
+</div>
+<div class="flex flex-col">
+<span class="text-[12px] font-bold">Admin-01</span>
+<span class="text-[10px] text-outline">Terminal ID: 4882</span>
+</div>
+</div>
+<button class="p-xs hover:bg-surface-container-highest rounded">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]" data-icon="settings">settings</span>
+</button>
+</div>
+</aside>
+<!-- Mobile Header -->
+<header class="md:hidden fixed top-0 w-full z-50 industrial-bg-dark border-b border-outline-variant flex justify-between items-center px-lg h-16">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-primary" data-icon="description">description</span>
+<h1 class="font-header-md text-header-md text-on-surface uppercase tracking-tight">Index Stamper</h1>
+</div>
+<button class="p-base rounded hover:bg-surface-container-highest">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="menu">menu</span>
+</button>
+</header>
+<!-- Main Content -->
+<main class="pt-20 pb-24 md:pt-0 md:pl-72 min-h-screen">
+<div class="max-w-6xl mx-auto p-md md:p-xl space-y-lg">
+<!-- Technical Header Section -->
+<section class="flex flex-col md:flex-row md:items-center justify-between gap-md border-b border-outline-variant pb-lg">
+<div class="space-y-xs">
+<h2 class="font-display-lg text-display-lg text-on-surface flex items-center gap-sm uppercase tracking-wide">
+                        Active Document Projects
+                    </h2>
+<p class="font-data-mono text-[12px] text-outline">RUNNING_QUEUE_BETA // SESSION: 0x992B4</p>
+</div>
+<div class="flex gap-sm">
+<button class="flex items-center gap-xs px-md py-sm bg-surface-container border border-outline-variant rounded hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]" data-icon="filter_alt">filter_alt</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Status: All</span>
+</button>
+<button class="flex items-center gap-xs px-md py-sm bg-primary text-on-primary rounded font-label-caps text-label-caps active:scale-95 transition-transform uppercase tracking-wider">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+                        New Job
+                    </button>
+</div>
+</section>
+<!-- Document List Grid (High Contrast Cards) -->
+<div class="grid grid-cols-1 gap-sm">
+<!-- Project Item 1 -->
+<div class="group flex flex-col sm:flex-row sm:items-center justify-between p-md bg-surface-container-low border border-outline-variant hover:border-primary/50 transition-colors cursor-pointer rounded-lg">
+<div class="flex items-center gap-lg">
+<div class="w-14 h-20 bg-black border border-outline flex items-center justify-center relative overflow-hidden shrink-0">
+<img alt="Document thumbnail" class="w-full h-full object-cover opacity-50" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBH1Hs0bWIFJI6m8UXKBV4m0RcJ0JxCgS5YPHMD14LvSPY9mhGAVX4HQrcZ9Nq_MunyH9zo7bMbYlQ5rCbkUMartm9IfmDxlbxAj68TcMAKkNr-40C8GLRWjMRxpc3odmidsId6zUa2vgdUJmLLfJfk2HItfEuCrkf3AAdrENQARM1M3fbLdeJM_PD5nt5VldR9oV0KOc0OBxKNTrUrxcIJhf6GrM1rgZtCDMGhVKVLxoLbgcUmEmp0pLcmDZmisgfbauLeLdMXbw"/>
+<div class="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+</div>
+<div class="space-y-xs">
+<div class="flex items-center gap-sm">
+<span class="font-header-md text-header-md text-on-surface">Contract_A_v12.pdf</span>
+<span class="px-1.5 py-0.5 bg-surface-container-high border border-outline text-[10px] text-outline font-data-mono rounded uppercase">PDF</span>
+</div>
+<div class="flex flex-wrap items-center gap-x-md gap-y-xs">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-outline text-[16px]" data-icon="description">description</span>
+<span class="font-data-mono text-[12px] text-on-surface-variant">PAGES: 42</span>
+</div>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-outline text-[16px]" data-icon="schedule">schedule</span>
+<span class="font-data-mono text-[12px] text-on-surface-variant">RECEIVED: 2H AGO</span>
+</div>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between sm:justify-end gap-lg mt-md sm:mt-0 pt-md sm:pt-0 border-t sm:border-t-0 border-outline-variant/30">
+<div class="flex items-center gap-sm">
+<span class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></span>
+<span class="font-label-caps text-label-caps text-on-surface uppercase tracking-wider">Queue: Ready</span>
+</div>
+<div class="flex items-center gap-sm">
+<button class="px-md py-sm bg-surface-container-high hover:bg-primary-container/20 text-primary border border-primary/30 font-label-caps text-label-caps rounded uppercase tracking-wider transition-all">Execute</button>
+<button class="p-sm text-outline hover:text-on-surface-variant transition-colors"><span class="material-symbols-outlined" data-icon="settings_input_component">settings_input_component</span></button>
+</div>
+</div>
+</div>
+<!-- Project Item 2 (Processing) -->
+<div class="group flex flex-col sm:flex-row sm:items-center justify-between p-md bg-surface-container-low border border-outline-variant hover:border-primary/50 transition-colors cursor-pointer rounded-lg">
+<div class="flex items-center gap-lg">
+<div class="w-14 h-20 bg-black border border-outline flex items-center justify-center relative overflow-hidden shrink-0">
+<img alt="Document thumbnail" class="w-full h-full object-cover opacity-50" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDxfY7pf4zA6zTZXelqx10r-tWGzXzWq7QojCKX2RkyUVAmwzp56UHB5ZE1_SoVfYzd8YTOQI3cczGgZG7dPKlCKNVoGHwcvJKV0F6nLqFcDW-xY8d026dA32qWxGywlcmxZ05lfQRNxm9Vc_jgaqX3yEqjVEudK4vf6ohFAFHNbECWPG0UcxtsjaB-MHhnJSgzkAiIb-zddpOT8c2xkpRU-7kKgoYAr4VTc5bI9_dTU-0EgLABdy0zYldmp3TODx0SQT8q6p9Nww"/>
+</div>
+<div class="space-y-xs">
+<div class="flex items-center gap-sm">
+<span class="font-header-md text-header-md text-on-surface">Batch_Invoice_Oct.pdf</span>
+<span class="px-1.5 py-0.5 bg-surface-container-high border border-outline text-[10px] text-outline font-data-mono rounded uppercase">TIFF</span>
+</div>
+<div class="flex flex-wrap items-center gap-x-md gap-y-xs">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-outline text-[16px]" data-icon="description">description</span>
+<span class="font-data-mono text-[12px] text-on-surface-variant">PAGES: 128</span>
+</div>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary animate-spin text-[16px]" data-icon="sync" style="font-variation-settings: 'wght' 200;">sync</span>
+<span class="font-data-mono text-[12px] text-primary">PROCESSING_TASK_09</span>
+</div>
+</div>
+</div>
+</div>
+<div class="flex flex-col items-end gap-sm mt-md sm:mt-0">
+<div class="flex items-center gap-sm mb-xs">
+<span class="font-data-mono text-[11px] text-primary">64% COMPLETE</span>
+</div>
+<div class="w-48 h-1 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[64%] shadow-[0_0_8px_rgba(168,199,255,0.5)]"></div>
+</div>
+</div>
+</div>
+<!-- Project Item 3 (Complete) -->
+<div class="group flex flex-col sm:flex-row sm:items-center justify-between p-md bg-surface-container-low border border-outline-variant hover:border-primary/50 transition-colors cursor-pointer rounded-lg opacity-80">
+<div class="flex items-center gap-lg">
+<div class="w-14 h-20 bg-black border border-outline flex items-center justify-center relative overflow-hidden shrink-0">
+<img alt="Document thumbnail" class="w-full h-full object-cover opacity-30 grayscale" src="https://lh3.googleusercontent.com/aida-public/AB6AXuByvc6ZF588fWNyLAdiasRMmbEXhC4jz40p_2IxZEF-yeZMQkR4yO9NVGKYDrf-h2dqf1VS3Jx78Hra3pxu7fU4O71zTu0rNX4z7SzJu6YvyyFxZkQ40WxojlmPbhTAG_l0kyKdsYuRN3jMIcnntO2vuM2QJPYBu28ryd0YuyVFdyU8GT-SiblTFwtsf1vlF6PTQwSavu4FB2jGmDaLqwCvSuApBMWeM1G_OD_9tDIHlXITZWRjzRJ7tO1U1bwo1mg5q1Dp2g5NgA"/>
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-green-500 text-[32px]" data-icon="check_circle">check_circle</span>
+</div>
+</div>
+<div class="space-y-xs">
+<div class="flex items-center gap-sm">
+<span class="font-header-md text-header-md text-outline">HR_Onboarding_Final.pdf</span>
+</div>
+<div class="flex items-center gap-md">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-outline text-[16px]" data-icon="task_alt">task_alt</span>
+<span class="font-data-mono text-[12px] text-outline uppercase">Indexed Successfully</span>
+</div>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between sm:justify-end gap-lg mt-md sm:mt-0 pt-md sm:pt-0 border-t sm:border-t-0 border-outline-variant/30">
+<div class="flex items-center gap-sm">
+<span class="font-label-caps text-label-caps text-outline uppercase tracking-wider">Archive: P-102</span>
+</div>
+<button class="px-md py-sm border border-outline-variant text-outline font-label-caps text-label-caps rounded uppercase hover:bg-surface-container-high transition-colors">Export Results</button>
+</div>
+</div>
+</div>
+<!-- Bento Stats Grid (Industrial Precision Style) -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-md">
+<div class="p-lg industrial-bg-dark border border-outline-variant rounded relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-md opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-[64px]" data-icon="bolt">bolt</span>
+</div>
+<span class="font-label-caps text-[10px] text-outline block mb-md uppercase tracking-[0.2em] border-b border-outline-variant pb-xs">System Throughput</span>
+<div class="flex items-baseline gap-sm">
+<span class="font-display-lg text-[32px] text-primary font-bold">1,284</span>
+<span class="font-data-mono text-[12px] text-outline">DOCS / HOUR</span>
+</div>
+<div class="mt-md flex items-center gap-xs">
+<span class="material-symbols-outlined text-green-400 text-[14px]" data-icon="trending_up">trending_up</span>
+<span class="text-[10px] text-green-400 font-data-mono">+12.4% vs last session</span>
+</div>
+</div>
+<div class="p-lg industrial-bg-dark border border-outline-variant rounded relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-md opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-[64px]" data-icon="verified">verified</span>
+</div>
+<span class="font-label-caps text-[10px] text-outline block mb-md uppercase tracking-[0.2em] border-b border-outline-variant pb-xs">Accuracy Metric</span>
+<div class="flex items-baseline gap-sm">
+<span class="font-display-lg text-[32px] text-primary font-bold">99.8%</span>
+<span class="font-data-mono text-[12px] text-outline">CONFIDENCE</span>
+</div>
+<div class="mt-md w-full h-1 bg-surface-container-highest rounded-full">
+<div class="bg-green-400 h-full w-[99.8%]"></div>
+</div>
+</div>
+<div class="p-lg industrial-bg-dark border border-outline-variant rounded relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-md opacity-10 group-hover:opacity-20 transition-opacity">
+<span class="material-symbols-outlined text-[64px]" data-icon="database">database</span>
+</div>
+<span class="font-label-caps text-[10px] text-outline block mb-md uppercase tracking-[0.2em] border-b border-outline-variant pb-xs">Queue Payload</span>
+<div class="flex items-baseline gap-sm">
+<span class="font-display-lg text-[32px] text-primary font-bold">2.4GB</span>
+<span class="font-data-mono text-[12px] text-outline">PENDING_IO</span>
+</div>
+<div class="mt-md flex items-center justify-between text-[10px] text-outline font-data-mono uppercase">
+<span>Cluster: US-EAST-1</span>
+<span>Buffer: OK</span>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Floating Action Button (Matches Dark Theme) -->
+<button class="fixed bottom-24 md:bottom-lg right-lg w-14 h-14 bg-primary text-on-primary rounded shadow-[0_8px_24px_rgba(168,199,255,0.25)] hover:shadow-primary/30 flex items-center justify-center transition-all duration-200 active:scale-95 group z-50">
+<span class="material-symbols-outlined text-[28px]" data-icon="add">add</span>
+<span class="absolute right-full mr-md px-md py-sm bg-inverse-surface text-inverse-on-surface font-label-caps text-label-caps rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-xl border border-outline-variant pointer-events-none uppercase tracking-wider">Queue Attachment</span>
+</button>
+<!-- Mobile Navigation (Adapting Desktop Side-Nav for Mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full flex justify-around items-center h-16 px-gutter industrial-bg-dark border-t border-outline-variant z-50">
+<a class="flex flex-col items-center justify-center text-primary" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="text-[9px] font-label-caps uppercase mt-0.5">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface" href="#">
+<span class="material-symbols-outlined" data-icon="page_control">page_control</span>
+<span class="text-[9px] font-label-caps uppercase mt-0.5">Process</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface" href="#">
+<span class="material-symbols-outlined" data-icon="rule">rule</span>
+<span class="text-[9px] font-label-caps uppercase mt-0.5">Rules</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface" href="#">
+<span class="material-symbols-outlined" data-icon="print">print</span>
+<span class="text-[9px] font-label-caps uppercase mt-0.5">Export</span>
+</a>
+</nav>
+</body></html>

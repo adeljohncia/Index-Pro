@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Export &amp; Print Hub - Document Indexing System</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-dim": "#1a1c1e",
+                        "secondary": "#9ea3af",
+                        "inverse-surface": "#e2e2e6",
+                        "outline": "#8e9199",
+                        "on-primary-container": "#d9e2ff",
+                        "surface-tint": "#b0c6ff",
+                        "surface": "#121316",
+                        "primary-container": "#00419c",
+                        "on-primary-fixed": "#001945",
+                        "surface-container-high": "#2b2f33",
+                        "on-tertiary-fixed": "#360f00",
+                        "inverse-primary": "#003c90",
+                        "on-secondary": "#283141",
+                        "secondary-fixed": "#d5e3fc",
+                        "tertiary-container": "#993900",
+                        "outline-variant": "#43474e",
+                        "on-tertiary-fixed-variant": "#7d2d00",
+                        "on-secondary-fixed": "#0d1c2e",
+                        "on-background": "#e2e2e6",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb596",
+                        "primary": "#b0c6ff",
+                        "surface-container": "#1e2023",
+                        "secondary-fixed-dim": "#b9c7df",
+                        "surface-container-highest": "#33373c",
+                        "on-surface-variant": "#c3c6cf",
+                        "tertiary": "#ffb596",
+                        "inverse-on-surface": "#191b22",
+                        "error": "#ffb4ab",
+                        "on-surface": "#e2e2e6",
+                        "on-error": "#690005",
+                        "surface-variant": "#43474e",
+                        "on-primary": "#002d6f",
+                        "secondary-container": "#3a485b",
+                        "tertiary-fixed": "#ffdbcd",
+                        "on-secondary-container": "#d5e3fc",
+                        "primary-fixed": "#d9e2ff",
+                        "surface-bright": "#38393e",
+                        "on-secondary-fixed-variant": "#3a485b",
+                        "on-tertiary-container": "#ffdbcd",
+                        "on-primary-fixed-variant": "#00419c",
+                        "surface-container-lowest": "#0c0e11",
+                        "surface-container-low": "#1a1c1e",
+                        "on-error-container": "#ffdad6",
+                        "error-container": "#93000a",
+                        "background": "#121316",
+                        "primary-fixed-dim": "#b0c6ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "12px",
+                        "xl": "32px",
+                        "base": "4px",
+                        "sm": "8px",
+                        "xs": "4px",
+                        "md": "16px",
+                        "lg": "24px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["IBM Plex Sans"],
+                        "label-caps": ["IBM Plex Sans"],
+                        "body-sm": ["IBM Plex Sans"],
+                        "data-mono": ["JetBrains Mono"],
+                        "header-md": ["IBM Plex Sans"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "data-mono": ["13px", {"lineHeight": "16px", "letterSpacing": "-0.02em", "fontWeight": "500"}],
+                        "header-md": ["18px", {"lineHeight": "24px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #121316;
+            color: #e2e2e6;
+        }
+        /* Custom scrollbar for technical look */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1a1c1e;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #43474e;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #b0c6ff;
+        }
+    </style>
+</head>
+<body class="font-body-sm text-body-sm overflow-hidden dark">
+<!-- TopAppBar -->
+<header class="bg-surface-container-low border-b border-outline-variant fixed top-0 w-full z-50 flex justify-between items-center px-lg h-16">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-primary" data-icon="description">description</span>
+<h1 class="font-display-lg text-display-lg font-bold text-on-surface">Document Indexing System</h1>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-highest transition-colors p-sm rounded-lg active:scale-95 duration-100" data-icon="settings">settings</button>
+</header>
+<!-- Side Navigation -->
+<aside class="fixed left-0 top-16 h-full w-80 bg-surface-container-low border-r border-outline-variant hidden md:flex flex-col gap-xs p-md">
+<div class="mb-md">
+<h2 class="font-display-lg text-display-lg text-primary">Project Manager</h2>
+</div>
+<nav class="space-y-xs">
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:bg-surface-container-highest transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-body-sm text-body-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:bg-surface-container-highest transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="page_control">page_control</span>
+<span class="font-body-sm text-body-sm">Processor</span>
+</a>
+<a class="flex items-center gap-md p-md rounded-lg text-on-surface-variant hover:bg-surface-container-highest transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="rule">rule</span>
+<span class="font-body-sm text-body-sm">Indexing Rules</span>
+</a>
+<a class="flex items-center gap-md p-md bg-secondary-container text-on-secondary-container rounded-lg border-l-4 border-primary transition-all duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="print">print</span>
+<span class="font-body-sm text-body-sm">Export Hub</span>
+</a>
+</nav>
+</aside>
+<!-- Main Workspace -->
+<main class="md:ml-80 pt-16 h-screen overflow-y-auto pb-20 md:pb-0 bg-surface">
+<div class="p-lg max-w-6xl mx-auto space-y-lg">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-md border-b border-outline-variant pb-md">
+<div>
+<span class="font-label-caps text-label-caps text-secondary mb-base block uppercase tracking-widest">Output Management</span>
+<h2 class="font-display-lg text-display-lg text-on-surface">Export &amp; Print Hub</h2>
+</div>
+<div class="flex gap-sm">
+<button class="bg-surface-container-lowest border border-outline-variant text-on-surface font-header-md px-md py-sm rounded hover:bg-surface-container-highest transition-all flex items-center gap-sm active:scale-95 text-sm">
+<span class="material-symbols-outlined text-sm" data-icon="print_connect">print_connect</span>
+                    Connect to Printer App
+                </button>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-lg">
+<!-- Batch Summary Card -->
+<div class="md:col-span-8 bg-surface-container-low border border-outline-variant rounded p-lg space-y-md">
+<div class="flex justify-between items-center border-b border-outline-variant/30 pb-sm">
+<h3 class="font-header-md text-header-md text-on-surface flex items-center gap-sm uppercase tracking-wider text-sm">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="analytics">analytics</span>
+                        Batch Summary
+                    </h3>
+<span class="bg-emerald-500/10 text-emerald-400 px-sm py-xs rounded border border-emerald-500/20 font-label-caps text-[10px] flex items-center gap-xs">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        PROCESSED
+                    </span>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-sm">
+<div class="bg-surface-container-lowest p-md rounded border border-outline-variant/50">
+<span class="font-label-caps text-[10px] text-secondary block mb-xs">TOTAL DOCUMENTS</span>
+<span class="font-data-mono text-2xl text-primary font-bold">1,248</span>
+</div>
+<div class="bg-surface-container-lowest p-md rounded border border-outline-variant/50">
+<span class="font-label-caps text-[10px] text-secondary block mb-xs">INDEXED FIELDS</span>
+<span class="font-data-mono text-2xl text-primary font-bold">8,736</span>
+</div>
+<div class="bg-surface-container-lowest p-md rounded border border-outline-variant/50">
+<span class="font-label-caps text-[10px] text-secondary block mb-xs">FILE SIZE</span>
+<span class="font-data-mono text-2xl text-primary font-bold">4.2 <span class="text-xs">GB</span></span>
+</div>
+<div class="bg-surface-container-lowest p-md rounded border border-outline-variant/50">
+<span class="font-label-caps text-[10px] text-secondary block mb-xs">ACCURACY RATE</span>
+<span class="font-data-mono text-2xl text-emerald-400 font-bold">99.8%</span>
+</div>
+</div>
+<div class="border border-outline-variant rounded overflow-hidden mt-md">
+<table class="w-full text-left font-body-sm">
+<thead class="bg-surface-container-highest font-label-caps text-[10px] text-on-surface-variant">
+<tr>
+<th class="p-md font-bold tracking-widest border-r border-outline-variant/30">DOCUMENT TYPE</th>
+<th class="p-md font-bold tracking-widest border-r border-outline-variant/30">COUNT</th>
+<th class="p-md font-bold tracking-widest border-r border-outline-variant/30">LAST INDEXED</th>
+<th class="p-md font-bold tracking-widest">STATUS</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/30 bg-surface-container-lowest">
+<tr class="hover:bg-surface-container-high transition-colors">
+<td class="p-md font-data-mono text-on-surface border-r border-outline-variant/30">Invoices_2023_Q4</td>
+<td class="p-md font-data-mono text-primary border-r border-outline-variant/30">840</td>
+<td class="p-md font-data-mono text-secondary border-r border-outline-variant/30">2023-11-20</td>
+<td class="p-md">
+<span class="text-emerald-400 font-label-caps text-[10px] px-sm py-xs bg-emerald-500/5 border border-emerald-500/20 rounded">READY</span>
+</td>
+</tr>
+<tr class="hover:bg-surface-container-high transition-colors">
+<td class="p-md font-data-mono text-on-surface border-r border-outline-variant/30">Shipping_Manifests</td>
+<td class="p-md font-data-mono text-primary border-r border-outline-variant/30">408</td>
+<td class="p-md font-data-mono text-secondary border-r border-outline-variant/30">2023-11-21</td>
+<td class="p-md">
+<span class="text-emerald-400 font-label-caps text-[10px] px-sm py-xs bg-emerald-500/5 border border-emerald-500/20 rounded">READY</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Printer Selection & Quick Actions -->
+<div class="md:col-span-4 space-y-lg">
+<!-- Printer Configuration Card -->
+<div class="bg-surface-container-low border border-outline-variant rounded p-lg space-y-md">
+<h3 class="font-header-md text-header-md flex items-center gap-sm text-sm uppercase tracking-widest">
+<span class="material-symbols-outlined text-primary" data-icon="settings">settings</span>
+                        Printer Settings
+                    </h3>
+<div class="space-y-sm">
+<label class="font-label-caps text-[10px] text-secondary uppercase tracking-widest">TARGET HARDWARE</label>
+<div class="relative">
+<select class="w-full bg-surface-container-lowest border border-outline-variant rounded p-md appearance-none focus:ring-1 focus:ring-primary focus:outline-none font-data-mono text-xs text-on-surface">
+<option>HP LaserJet Enterprise M608 [10.0.1.45]</option>
+<option>Canon imageRUNNER ADVANCE C5535i</option>
+<option>Virtual PDF Printer (System Default)</option>
+</select>
+<span class="material-symbols-outlined absolute right-md top-1/2 -translate-y-1/2 pointer-events-none text-secondary" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+<div class="grid grid-cols-1 gap-sm">
+<div class="bg-surface-container-lowest p-sm rounded border border-outline-variant/50">
+<div class="flex justify-between items-center mb-xs">
+<span class="font-label-caps text-[10px] text-secondary">TONER LEVEL</span>
+<span class="font-data-mono text-[10px] text-primary">74%</span>
+</div>
+<div class="h-1 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[74%]"></div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-sm rounded border border-outline-variant/50 flex items-center justify-between">
+<span class="font-label-caps text-[10px] text-secondary">PAPER LOAD</span>
+<div class="flex items-center gap-xs text-emerald-400">
+<span class="material-symbols-outlined text-xs" data-icon="check_circle">check_circle</span>
+<span class="font-data-mono text-[10px]">OPTIMAL</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Action Hub -->
+<div class="bg-surface-container-high rounded border border-primary/30 p-lg space-y-md">
+<h3 class="font-header-md text-header-md text-on-surface text-sm uppercase tracking-widest">Output Operations</h3>
+<div class="space-y-sm">
+<button class="w-full bg-primary text-on-primary font-bold py-md rounded flex items-center justify-center gap-md hover:brightness-110 transition-all active:scale-[0.98] duration-100 uppercase text-xs tracking-widest">
+<span class="material-symbols-outlined text-lg" data-icon="picture_as_pdf">picture_as_pdf</span>
+                            Print / Export
+                        </button>
+<button class="w-full bg-surface-container-lowest text-on-surface border border-outline-variant font-bold py-md rounded flex items-center justify-center gap-md hover:bg-surface-container-highest transition-colors active:scale-[0.98] duration-100 uppercase text-xs tracking-widest">
+<span class="material-symbols-outlined text-lg" data-icon="load_sample">load_sample</span>
+                            Load Sample
+                        </button>
+</div>
+<p class="text-secondary text-[10px] italic text-center leading-tight">
+                        Batch encryption and OCR metadata will be embedded in the final secure export.
+                    </p>
+</div>
+</div>
+<!-- Visual Progress/Graphic Card -->
+<div class="md:col-span-12 bg-surface-container-low border border-outline-variant rounded overflow-hidden relative min-h-[160px]">
+<img alt="Document processing workspace" class="absolute inset-0 w-full h-full object-cover opacity-10 grayscale brightness-50" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCINLx5ksBt-_1xz5g88zb_qp6B2a69HSkAb-IfAvNG0c-P303uL0i1kYrLAxnCI2VhLbpINMSawElp7vw5yfdRCmbsnZrPll8CwQcP6uDxWuaz2KJaf6OilAwwH81_XGARoJPo9SNLlB0RCPy97f3Hw3q-SJPGxcLs0nzn4UHyDJ9xSY9IIES_QqLo_FTnqhnCJPeDsCdZh8bCXRGO5G8zS6f9v8tbh8T-zV0LbrjgJ4KCohj43g1ZhjtC5qNVZ-JtuA8h6V5XpA"/>
+<div class="relative z-10 p-lg h-full flex flex-col justify-center bg-gradient-to-r from-surface-container-low via-surface-container-low/80 to-transparent">
+<div class="max-w-2xl">
+<h4 class="font-header-md text-header-md mb-sm text-primary uppercase tracking-widest text-sm">Industrial Output Protocol</h4>
+<p class="text-on-surface-variant text-xs leading-relaxed max-w-lg">The system is currently optimized for ISO-standard document replication. Every export includes a cryptographic hash to ensure data integrity across physical and digital formats.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center h-16 px-gutter bg-surface-container-low border-t border-outline-variant md:hidden z-50">
+<div class="flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-caps text-label-caps">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="edit_document">edit_document</span>
+<span class="font-label-caps text-label-caps">Process</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="settings_suggest">settings_suggest</span>
+<span class="font-label-caps text-label-caps">Rules</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded px-4 py-1">
+<span class="material-symbols-outlined" data-icon="download">download</span>
+<span class="font-label-caps text-label-caps">Export</span>
+</div>
+</nav>
+</body></html>
