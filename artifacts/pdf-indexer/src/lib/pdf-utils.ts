@@ -77,64 +77,90 @@ export async function analyzePdfPages(file: File): Promise<PageAnalysis[]> {
 }
 
 /**
- * The available index code formats:
- *  simple  → <A1>, <A1-1>, <A1-2>, ...
- *  sub     → <A1>, <A1-1>, <A1-1-1>, <A1-1-2>, ...  (first sub gets its own level)
- *  deep    → <A1>, <A1-1-1>, <A1-1-2>, <A1-1-3>, ...  (all sub-pages 3 levels)
+ * Three independently-togglable format levels.
+ *
+ *  level1  — first content page gets bare mainCode              e.g. <A1>
+ *  level2  — sub-pages get mainCode-N (N = 1, 2, 3 …)          e.g. <A1-1>
+ *  level3  — deep sub-pages get mainCode-1-N (N = 1, 2, 3 …)   e.g. <A1-1-1>
+ *
+ * Rules for page assignment:
+ *  • level1 uses exactly 1 page (the very first content page), if enabled.
+ *  • level2 uses exactly 1 page (the next content page after level1), if BOTH
+ *    level2 AND level3 are enabled; otherwise it consumes all remaining pages.
+ *  • level3 consumes all remaining pages, if enabled.
+ *  • If only one level is enabled, it consumes every content page.
  */
-export type IndexFormat = 'simple' | 'sub' | 'deep';
+export interface FormatLevels {
+  level1: boolean;
+  level2: boolean;
+  level3: boolean;
+}
+
+export const DEFAULT_FORMAT_LEVELS: FormatLevels = { level1: true, level2: true, level3: false };
 
 /**
- * Given a main code like "<A1>", a 0-based position, and a format, returns the stamp code.
- *
- *  simple:
- *    0 → <A1>   1 → <A1-1>   2 → <A1-2>   ...
- *  sub:
- *    0 → <A1>   1 → <A1-1>   2 → <A1-1-1>   3 → <A1-1-2>   ...
- *  deep:
- *    0 → <A1>   1 → <A1-1-1>   2 → <A1-1-2>   3 → <A1-1-3>   ...
+ * Given a mainCode, 0-based contentIndex (among non-blank pages), and active
+ * format levels, returns the stamp string for that page.
  */
-export function subIndexCode(mainCode: string, position: number, format: IndexFormat = 'simple'): string {
-  if (position === 0) return mainCode;
+export function codeForContentPage(
+  mainCode: string,
+  contentIndex: number,
+  levels: FormatLevels
+): string {
   const base = mainCode.endsWith('>') ? mainCode.slice(0, -1) : mainCode;
+  let consumed = 0;
 
-  if (format === 'deep') {
-    // All sub-pages: <A1-1-1>, <A1-1-2>, <A1-1-3>, ...
-    return `${base}-1-${position}>`;
+  // ── Level 1: bare mainCode, exactly 1 page ────────────────────────────
+  if (levels.level1) {
+    if (contentIndex === consumed) return mainCode;
+    consumed++;
   }
 
-  if (format === 'sub') {
-    // position 1 → <A1-1>; positions 2+ → <A1-1-1>, <A1-1-2>, ...
-    if (position === 1) return `${base}-1>`;
-    return `${base}-1-${position - 1}>`;
+  // ── Level 2 ───────────────────────────────────────────────────────────
+  if (levels.level2) {
+    if (!levels.level3) {
+      // Level 2 takes all remaining pages → sequential counter
+      const n = contentIndex - consumed + 1;
+      return `${base}-${n}>`;
+    } else {
+      // Level 2 takes exactly 1 page (the "bridge" sub-item)
+      if (contentIndex === consumed) return `${base}-1>`;
+      consumed++;
+    }
   }
 
-  // simple: <A1-1>, <A1-2>, <A1-3>, ...
-  return `${base}-${position}>`;
+  // ── Level 3: all remaining pages ─────────────────────────────────────
+  if (levels.level3) {
+    const n = contentIndex - consumed + 1;
+    return `${base}-1-${n}>`;
+  }
+
+  // Fallback (no levels enabled): repeat mainCode
+  return mainCode;
 }
 
 /**
  * Compute assigned index codes for pages of a single PDF.
- * overrides: { pageNumber -> custom code (empty = skip) }
+ * overrides: { pageNumber -> custom code (empty string = skip/null) }
  */
 export function computeAttachmentIndices(
   pages: PageAnalysis[],
   mainCode: string,
   overrides: Record<number, string>,
-  format: IndexFormat = 'simple'
+  levels: FormatLevels = DEFAULT_FORMAT_LEVELS
 ): PageAnalysis[] {
-  let position = 0;
+  let contentIndex = 0;
   return pages.map((page) => {
     if (page.isBlank) return { ...page, assignedIndex: null };
 
     if (page.pageNumber in overrides) {
       const code = overrides[page.pageNumber] || null;
-      position++;
+      contentIndex++;
       return { ...page, assignedIndex: code };
     }
 
-    const code = subIndexCode(mainCode, position, format);
-    position++;
+    const code = codeForContentPage(mainCode, contentIndex, levels);
+    contentIndex++;
     return { ...page, assignedIndex: code };
   });
 }

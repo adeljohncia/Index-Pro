@@ -15,7 +15,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import {
   analyzePdfPages, generateThumbnails, computeAttachmentIndices,
-  processAndMergePdfs, generatePrintTemplateHtml, PageAnalysis, IndexFormat,
+  processAndMergePdfs, generatePrintTemplateHtml, PageAnalysis,
+  FormatLevels, DEFAULT_FORMAT_LEVELS, codeForContentPage,
 } from '@/lib/pdf-utils';
 
 /* ─── Types ─────────────────────────────────────────────────────────────── */
@@ -30,7 +31,7 @@ function formatBytes(b: number) {
 interface GlobalSettings {
   prefix: string;
   startNumber: number;
-  format: IndexFormat;
+  format: FormatLevels;
   topMarginCm: number;
   sideMarginCm: number;
   fontSize: number;
@@ -141,10 +142,13 @@ export function IndexerHome() {
   const [previewEntryId, setPreviewEntryId] = useState<string | null>(null);
 
   const [settings, setSettings] = useState<GlobalSettings>({
-    prefix: 'A', startNumber: 1, format: 'simple',
+    prefix: 'A', startNumber: 1, format: DEFAULT_FORMAT_LEVELS,
     topMarginCm: 0.5, sideMarginCm: 0.5,
     fontSize: 16, bold: false,
   });
+
+  const toggleFormatLevel = (level: keyof FormatLevels) =>
+    setSettings((p) => ({ ...p, format: { ...p.format, [level]: !p.format[level] } }));
 
   const updateSetting = <K extends keyof GlobalSettings>(k: K, v: GlobalSettings[K]) =>
     setSettings((p) => ({ ...p, [k]: v }));
@@ -154,7 +158,7 @@ export function IndexerHome() {
     entries.map((e) => ({
       ...e,
       pages: computeAttachmentIndices(e.pages, e.mainCode, overrides[e.id] ?? {}, settings.format),
-    })), [entries, overrides, settings.format]);
+    })), [entries, overrides, settings.format.level1, settings.format.level2, settings.format.level3]);
 
   const totalStamps = useMemo(() => processedEntries.reduce((s, e) => s + e.pages.filter((p) => p.assignedIndex).length, 0), [processedEntries]);
   const totalPages  = useMemo(() => entries.reduce((s, e) => s + e.pages.length, 0), [entries]);
@@ -162,16 +166,11 @@ export function IndexerHome() {
   const totalSize   = useMemo(() => entries.reduce((s, e) => s + e.file.size, 0), [entries]);
   const anyAnalyzing = entries.some((e) => e.isAnalyzing);
 
-  /* Live preview codes — vary by format */
-  const previewCode  = `<${settings.prefix}${settings.startNumber}>`;
-  const previewPage2 = settings.format === 'deep'
-    ? `<${settings.prefix}${settings.startNumber}-1-1>`
-    : `<${settings.prefix}${settings.startNumber}-1>`;
-  const previewPage3 = settings.format === 'simple'
-    ? `<${settings.prefix}${settings.startNumber}-2>`
-    : settings.format === 'sub'
-      ? `<${settings.prefix}${settings.startNumber}-1-1>`
-      : `<${settings.prefix}${settings.startNumber}-1-2>`;
+  /* Live preview codes — computed from actual logic */
+  const previewMainCode = `<${settings.prefix}${settings.startNumber}>`;
+  const previewCodes = useMemo(() => {
+    return [0, 1, 2, 3].map((i) => codeForContentPage(previewMainCode, i, settings.format));
+  }, [previewMainCode, settings.format.level1, settings.format.level2, settings.format.level3]);
 
   /* ── File loading ──────────────────────────────────────────────────────── */
   const loadEntry = useCallback(async (entry: PdfEntry) => {
@@ -455,48 +454,61 @@ export function IndexerHome() {
                       className="h-9 font-mono text-sm" data-testid="input-start-number" />
                   </div>
                 </div>
+                {/* Format level checkboxes */}
                 <div className="mb-4">
-                  <FieldLabel>Format</FieldLabel>
-                  <Select value={settings.format} onValueChange={(v) => updateSetting('format', v as IndexFormat)}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="simple">
-                        <span className="font-mono text-xs">{'<A1> <A1-1> <A1-2>'}</span>
-                        <span className="text-muted-foreground ml-2">— simple sub-index</span>
-                      </SelectItem>
-                      <SelectItem value="sub">
-                        <span className="font-mono text-xs">{'<A1> <A1-1> <A1-1-1>'}</span>
-                        <span className="text-muted-foreground ml-2">— two-level sub</span>
-                      </SelectItem>
-                      <SelectItem value="deep">
-                        <span className="font-mono text-xs">{'<A1> <A1-1-1> <A1-1-2>'}</span>
-                        <span className="text-muted-foreground ml-2">— three-level deep</span>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <FieldLabel>Format Levels</FieldLabel>
+                  <div className="space-y-2 mt-1">
+                    {([
+                      { key: 'level1' as const, label: '<A1>', desc: 'First content page uses the base attachment code' },
+                      { key: 'level2' as const, label: '<A1-1>', desc: 'Sub-pages numbered with one extra level' },
+                      { key: 'level3' as const, label: '<A1-1-1>', desc: 'Deep sub-pages numbered with two extra levels' },
+                    ]).map(({ key, label, desc }) => {
+                      const active = settings.format[key];
+                      return (
+                        <label key={key}
+                          className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all select-none
+                            ${active
+                              ? 'border-primary/40 bg-primary/5 text-foreground'
+                              : 'border-border bg-muted/30 text-muted-foreground hover:bg-muted/60'}`}
+                          onClick={() => toggleFormatLevel(key)}>
+                          {/* Custom checkbox */}
+                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors
+                            ${active ? 'bg-primary border-primary' : 'border-muted-foreground/40'}`}>
+                            {active && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                          </div>
+                          <code className={`font-mono text-sm font-bold shrink-0 ${active ? 'text-primary' : 'text-muted-foreground'}`}>
+                            {label}
+                          </code>
+                          <span className="text-xs leading-tight">{desc}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
-                {/* Live preview — updates with format + prefix + startNumber */}
+
+                {/* Live preview — exact codes from real logic */}
                 <div>
-                  <FieldLabel>Preview</FieldLabel>
+                  <FieldLabel>Preview — how pages will be stamped</FieldLabel>
                   <div className="rounded-lg bg-[#1a1d27] border border-white/10 px-4 py-3">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-white/35 text-[10px] font-mono uppercase tracking-widest shrink-0">p.1</span>
-                      <span className="font-mono text-sm font-bold text-blue-400">{previewCode}</span>
-                      <span className="text-white/20 mx-1">→</span>
-                      <span className="text-white/35 text-[10px] font-mono uppercase tracking-widest shrink-0">p.2</span>
-                      <span className="font-mono text-sm font-bold text-blue-300">{previewPage2}</span>
-                      <span className="text-white/20 mx-1">→</span>
-                      <span className="text-white/35 text-[10px] font-mono uppercase tracking-widest shrink-0">p.3</span>
-                      <span className="font-mono text-sm font-bold text-blue-300">{previewPage3}</span>
-                      <span className="font-mono text-sm text-white/30 ml-1">&hellip;</span>
+                    <div className="flex items-center gap-x-3 gap-y-1 flex-wrap">
+                      {previewCodes.map((code, i) => (
+                        <React.Fragment key={i}>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-white/30 text-[10px] font-mono">p.{i + 1}</span>
+                            <span className={`font-mono text-sm font-bold ${i === 0 ? 'text-blue-400' : 'text-blue-300'}`}>
+                              {code}
+                            </span>
+                          </div>
+                          {i < previewCodes.length - 1 && (
+                            <span className="text-white/20 text-xs">→</span>
+                          )}
+                        </React.Fragment>
+                      ))}
+                      <span className="font-mono text-sm text-white/25">&hellip;</span>
                     </div>
-                    <p className="text-white/25 text-[10px] font-mono mt-2 leading-4">
-                      {settings.format === 'simple' && 'Pages numbered sequentially: A1 → A1-1 → A1-2 → …'}
-                      {settings.format === 'sub'    && 'First sub gets own level, then nests: A1 → A1-1 → A1-1-1 → …'}
-                      {settings.format === 'deep'   && 'All sub-pages stamped at 3rd level: A1 → A1-1-1 → A1-1-2 → …'}
-                    </p>
+                    {!settings.format.level1 && !settings.format.level2 && !settings.format.level3 && (
+                      <p className="text-amber-400/60 text-[10px] font-mono mt-2">No levels enabled — enable at least one.</p>
+                    )}
                   </div>
                 </div>
               </Panel>
@@ -601,7 +613,7 @@ export function IndexerHome() {
                     <div className="rounded-lg border border-border bg-muted/30 p-3 flex items-center justify-center">
                       <span style={{ fontSize: `${Math.min(settings.fontSize, 22)}px`, fontWeight: settings.bold ? 700 : 400 }}
                         className="font-sans text-foreground">
-                        {previewCode}
+                        {previewMainCode}
                       </span>
                     </div>
                   </div>
