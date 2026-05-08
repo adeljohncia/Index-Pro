@@ -7,16 +7,9 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
 ).href;
 
 export interface PageAnalysis {
-  pageNumber: number;
+  pageNumber: number; // 1-indexed within its PDF
   isBlank: boolean;
   assignedIndex: string | null;
-}
-
-export interface Attachment {
-  id: string;
-  mainCode: string;
-  fromPage: number;
-  untilPage: number;
 }
 
 export async function analyzePdfPages(file: File): Promise<PageAnalysis[]> {
@@ -32,31 +25,22 @@ export async function analyzePdfPages(file: File): Promise<PageAnalysis[]> {
 
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d', { willReadFrequently: true });
-
     if (!context) continue;
 
     canvas.width = viewport.width;
     canvas.height = viewport.height;
-
-    await page.render({ canvasContext: context, viewport }).promise;
+    await page.render({ canvasContext: context, viewport, canvas }).promise;
 
     const imgData = context.getImageData(0, 0, canvas.width, canvas.height);
     const data = imgData.data;
 
-    let sum = 0;
-    let sumSq = 0;
-    let count = 0;
-
+    let sum = 0, sumSq = 0, count = 0;
     for (let j = 0; j < data.length; j += 4) {
       const gray = 0.299 * data[j] + 0.587 * data[j + 1] + 0.114 * data[j + 2];
-      sum += gray;
-      sumSq += gray * gray;
-      count++;
+      sum += gray; sumSq += gray * gray; count++;
     }
-
     const mean = sum / count;
-    const variance = sumSq / count - mean * mean;
-    const stdDev = Math.sqrt(variance);
+    const stdDev = Math.sqrt(sumSq / count - mean * mean);
 
     analysis.push({ pageNumber: i, isBlank: stdDev < 5, assignedIndex: null });
   }
@@ -65,87 +49,96 @@ export async function analyzePdfPages(file: File): Promise<PageAnalysis[]> {
 }
 
 /**
- * For a given attachment mainCode (e.g. "<A1>") and position within that attachment
- * (0-indexed, counting only non-blank pages):
- *   position 0 → "<A1>"
- *   position 1 → "<A1-1>"
- *   position 2 → "<A1-2>"
+ * Given a main code like "<A1>" and a 0-based position within the attachment:
+ *   0 → "<A1>", 1 → "<A1-1>", 2 → "<A1-2>", ...
  */
 export function subIndexCode(mainCode: string, position: number): string {
   if (position === 0) return mainCode;
-  const withoutClose = mainCode.endsWith('>') ? mainCode.slice(0, -1) : mainCode;
-  return `${withoutClose}-${position}>`;
+  const base = mainCode.endsWith('>') ? mainCode.slice(0, -1) : mainCode;
+  return `${base}-${position}>`;
 }
 
-export function computeAssignedIndices(
+/**
+ * Compute assigned index codes for pages of a single PDF.
+ * overrides: { pageNumber -> custom code (empty = skip) }
+ */
+export function computeAttachmentIndices(
   pages: PageAnalysis[],
-  attachments: Attachment[],
+  mainCode: string,
   overrides: Record<number, string>
 ): PageAnalysis[] {
-  const indexMap = new Map<number, string>();
-
-  for (const attachment of attachments) {
-    let position = 0;
-    for (const page of pages) {
-      if (page.pageNumber < attachment.fromPage || page.pageNumber > attachment.untilPage) continue;
-      if (page.isBlank) continue;
-      indexMap.set(page.pageNumber, subIndexCode(attachment.mainCode, position));
-      position++;
-    }
-  }
-
+  let position = 0;
   return pages.map((page) => {
+    if (page.isBlank) return { ...page, assignedIndex: null };
+
     if (page.pageNumber in overrides) {
-      return { ...page, assignedIndex: overrides[page.pageNumber] || null };
+      const code = overrides[page.pageNumber] || null;
+      position++;
+      return { ...page, assignedIndex: code };
     }
-    return { ...page, assignedIndex: indexMap.get(page.pageNumber) ?? null };
+
+    const code = subIndexCode(mainCode, position);
+    position++;
+    return { ...page, assignedIndex: code };
   });
 }
 
-export async function processPdfWithIndices(
-  file: File,
-  pages: PageAnalysis[]
-): Promise<Blob> {
-  const arrayBuffer = await file.arrayBuffer();
-  const pdfDoc = await PDFDocument.load(arrayBuffer);
-  const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  const fontSize = 16;
-  const marginPt = 28.35;
-
-  const pdfPages = pdfDoc.getPages();
-
-  for (const page of pages) {
-    if (!page.assignedIndex) continue;
-    const pdfPage = pdfPages[page.pageNumber - 1];
-    if (!pdfPage) continue;
-
-    const { width, height } = pdfPage.getSize();
-    const textWidth = helveticaFont.widthOfTextAtSize(page.assignedIndex, fontSize);
-    const isOdd = page.pageNumber % 2 !== 0;
-
-    const x = isOdd ? marginPt : width - marginPt - textWidth;
-    const y = height - marginPt - fontSize;
-
-    pdfPage.drawText(page.assignedIndex, {
-      x,
-      y,
-      size: fontSize,
-      font: helveticaFont,
-      color: rgb(0, 0, 0),
-    });
-  }
-
-  const pdfBytes = await pdfDoc.save();
-  return new Blob([pdfBytes], { type: 'application/pdf' });
+export interface PdfEntryForProcessing {
+  file: File;
+  pages: PageAnalysis[]; // with assignedIndex already computed
 }
 
-export function generatePrintTemplateHtml(pages: PageAnalysis[]): string {
-  const htmlParts = [
+/**
+ * Merge multiple PDFs into one, stamping index codes onto each page.
+ * Odd/even is determined per-PDF (page 1 of each PDF is always odd = top-left).
+ */
+export async function processAndMergePdfs(
+  entries: PdfEntryForProcessing[]
+): Promise<Blob> {
+  const mergedDoc = await PDFDocument.create();
+  const helveticaFont = await mergedDoc.embedFont(StandardFonts.Helvetica);
+  const fontSize = 16;
+  const marginPt = 28.35; // 1 cm in points
+
+  for (const entry of entries) {
+    const arrayBuffer = await entry.file.arrayBuffer();
+    const sourceDoc = await PDFDocument.load(arrayBuffer);
+    const pageCount = sourceDoc.getPageCount();
+    const pageIndices = Array.from({ length: pageCount }, (_, i) => i);
+    const copied = await mergedDoc.copyPages(sourceDoc, pageIndices);
+
+    for (let i = 0; i < copied.length; i++) {
+      const copiedPage = copied[i];
+      mergedDoc.addPage(copiedPage);
+
+      const pageAnalysis = entry.pages[i];
+      if (!pageAnalysis?.assignedIndex) continue;
+
+      const { width, height } = copiedPage.getSize();
+      const text = pageAnalysis.assignedIndex;
+      const textWidth = helveticaFont.widthOfTextAtSize(text, fontSize);
+      const isOdd = (i + 1) % 2 !== 0; // local page number within PDF
+
+      const x = isOdd ? marginPt : width - marginPt - textWidth;
+      const y = height - marginPt - fontSize;
+
+      copiedPage.drawText(text, { x, y, size: fontSize, font: helveticaFont, color: rgb(0, 0, 0) });
+    }
+  }
+
+  const pdfBytes = await mergedDoc.save();
+  return new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
+}
+
+export function generatePrintTemplateHtml(
+  entries: Array<{ fileName: string; mainCode: string; pages: PageAnalysis[] }>
+): string {
+  const parts = [
     `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Print Template</title>
+  <title>Print Overlay Template</title>
   <style>
     body { margin: 0; padding: 0; font-family: Arial, sans-serif; background: #f0f0f0; }
     @page { size: A4; margin: 0; }
@@ -155,31 +148,29 @@ export function generatePrintTemplateHtml(pages: PageAnalysis[]): string {
       page-break-after: always; box-sizing: border-box;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-    @media print {
-      body { background: white; }
-      .page { box-shadow: none; margin: 0; }
-      .no-print { display: none; }
-    }
-    .stamp { position: absolute; font-size: 16pt; top: 10mm; }
+    @media print { body { background: white; } .page { box-shadow: none; margin: 0; } .no-print { display: none; } }
+    .stamp { position: absolute; font-size: 16pt; font-family: Arial, sans-serif; top: 10mm; }
     .odd .stamp { left: 10mm; }
     .even .stamp { right: 10mm; }
-    .toolbar { padding: 20px; text-align: center; background: #333; color: white; }
-    button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #0066cc; color: white; border: none; border-radius: 4px; }
+    .toolbar { padding: 16px; text-align: center; background: #1e293b; color: white; }
+    .toolbar button { padding: 10px 24px; font-size: 15px; cursor: pointer; background: #3b82f6; color: white; border: none; border-radius: 6px; }
   </style>
 </head>
 <body>
   <div class="toolbar no-print"><button onclick="window.print()">Print Template</button></div>`,
   ];
 
-  for (const page of pages) {
-    if (!page.assignedIndex) continue;
-    const isOdd = page.pageNumber % 2 !== 0;
-    htmlParts.push(`
+  for (const entry of entries) {
+    for (const page of entry.pages) {
+      if (!page.assignedIndex) continue;
+      const isOdd = page.pageNumber % 2 !== 0;
+      parts.push(`
   <div class="page ${isOdd ? 'odd' : 'even'}">
     <div class="stamp">${page.assignedIndex.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
   </div>`);
+    }
   }
 
-  htmlParts.push(`</body></html>`);
-  return htmlParts.join('\n');
+  parts.push(`</body></html>`);
+  return parts.join('\n');
 }
