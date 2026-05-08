@@ -116,17 +116,33 @@ export interface PdfEntryForProcessing {
   pages: PageAnalysis[]; // with assignedIndex already computed
 }
 
+export interface ProcessingOptions {
+  topMarginCm?: number;   // default 0.5
+  sideMarginCm?: number;  // default 0.5
+  fontSize?: number;      // default 16
+  bold?: boolean;         // default false
+}
+
 /**
  * Merge multiple PDFs into one, stamping index codes onto each page.
  * Odd/even is determined per-PDF (page 1 of each PDF is always odd = top-left).
  */
 export async function processAndMergePdfs(
-  entries: PdfEntryForProcessing[]
+  entries: PdfEntryForProcessing[],
+  options: ProcessingOptions = {}
 ): Promise<Blob> {
+  const {
+    topMarginCm = 0.5,
+    sideMarginCm = 0.5,
+    fontSize = 16,
+    bold = false,
+  } = options;
+
   const mergedDoc = await PDFDocument.create();
-  const helveticaFont = await mergedDoc.embedFont(StandardFonts.Helvetica);
-  const fontSize = 16;
-  const marginPt = 14.175; // 0.5 cm in points
+  const fontName = bold ? StandardFonts.HelveticaBold : StandardFonts.Helvetica;
+  const helveticaFont = await mergedDoc.embedFont(fontName);
+  const marginTopPt = topMarginCm * 28.35;
+  const marginSidePt = sideMarginCm * 28.35;
 
   for (const entry of entries) {
     const arrayBuffer = await entry.file.arrayBuffer();
@@ -147,8 +163,8 @@ export async function processAndMergePdfs(
       const textWidth = helveticaFont.widthOfTextAtSize(text, fontSize);
       const isOdd = (i + 1) % 2 !== 0; // local page number within PDF
 
-      const x = isOdd ? marginPt : width - marginPt - textWidth;
-      const y = height - marginPt - fontSize;
+      const x = isOdd ? marginSidePt : width - marginSidePt - textWidth;
+      const y = height - marginTopPt - fontSize;
 
       copiedPage.drawText(text, { x, y, size: fontSize, font: helveticaFont, color: rgb(0, 0, 0) });
     }
