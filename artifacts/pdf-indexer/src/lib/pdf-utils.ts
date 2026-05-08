@@ -98,7 +98,7 @@ export async function processAndMergePdfs(
   const mergedDoc = await PDFDocument.create();
   const helveticaFont = await mergedDoc.embedFont(StandardFonts.Helvetica);
   const fontSize = 16;
-  const marginPt = 28.35; // 1 cm in points
+  const marginPt = 14.175; // 0.5 cm in points
 
   for (const entry of entries) {
     const arrayBuffer = await entry.file.arrayBuffer();
@@ -149,9 +149,9 @@ export function generatePrintTemplateHtml(
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     @media print { body { background: white; } .page { box-shadow: none; margin: 0; } .no-print { display: none; } }
-    .stamp { position: absolute; font-size: 16pt; font-family: Arial, sans-serif; top: 10mm; }
-    .odd .stamp { left: 10mm; }
-    .even .stamp { right: 10mm; }
+    .stamp { position: absolute; font-size: 16pt; font-family: Arial, sans-serif; top: 5mm; }
+    .odd .stamp { left: 5mm; }
+    .even .stamp { right: 5mm; }
     .toolbar { padding: 16px; text-align: center; background: #1e293b; color: white; }
     .toolbar button { padding: 10px 24px; font-size: 15px; cursor: pointer; background: #3b82f6; color: white; border: none; border-radius: 6px; }
   </style>
