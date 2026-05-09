@@ -14,13 +14,11 @@ import {
 } from '@/lib/pdf-utils';
 
 import { DashboardTab } from './tab-dashboard';
-import { PdfEditorTab } from './tab-pdf-editor';
 import { PdfToolsTab } from './tab-pdf-tools';
 import { IndexEditorTab } from './tab-index-editor';
-import { ExportTab } from './tab-export';
 
 /* ─── Types ─────────────────────────────────────────────────────────────── */
-type AppTab = 'dashboard' | 'pdf-editor' | 'pdf-tools' | 'index-editor' | 'export';
+type AppTab = 'dashboard' | 'pdf-tools' | 'index-editor';
 
 function uid() { return Math.random().toString(36).substring(2, 9); }
 function formatBytes(b: number) {
@@ -58,10 +56,8 @@ function buildMainCode(prefix: string, num: number) {
 /* ─── Nav items ─────────────────────────────────────────────────────────── */
 const NAV_ITEMS: { tab: AppTab; icon: React.ElementType; label: string; shortLabel: string }[] = [
   { tab: 'dashboard',    icon: LayoutGrid, label: 'Dashboard',    shortLabel: 'Home' },
-  { tab: 'pdf-editor',   icon: FileText,   label: 'PDF Editor',   shortLabel: 'Editor' },
   { tab: 'pdf-tools',    icon: Wrench,     label: 'PDF Tools',    shortLabel: 'Tools' },
   { tab: 'index-editor', icon: Settings2,  label: 'Index Editor', shortLabel: 'Index' },
-  { tab: 'export',       icon: Download,   label: 'Export Hub',   shortLabel: 'Export' },
 ];
 
 /* ─── Desktop Sidebar ───────────────────────────────────────────────────── */
@@ -184,10 +180,8 @@ function TopBar({
 
   const subtitles: Record<AppTab, string> = {
     dashboard: 'Overview of your documents and workflow',
-    'pdf-editor': 'Rotate, delete pages and extract text',
     'pdf-tools': 'Merge, split and convert PDF documents',
     'index-editor': 'Configure stamp codes, margins and typography',
-    export: 'Download your stamped PDF',
   };
 
   return (
@@ -399,17 +393,6 @@ export function IndexerHome() {
             </ScrollArea>
           )}
 
-          {activeTab === 'pdf-editor' && (
-            <PdfEditorTab
-              entries={entries}
-              onAddFiles={handleOpenFiles}
-              fileInputRef={fileInputRef}
-              isDragging={isDragging}
-              setIsDragging={setIsDragging}
-              onDrop={handleDrop}
-            />
-          )}
-
           {activeTab === 'pdf-tools' && (
             <PdfToolsTab />
           )}
@@ -433,21 +416,7 @@ export function IndexerHome() {
             />
           )}
 
-          {activeTab === 'export' && (
-            <ScrollArea className="h-full">
-              <ExportTab
-                totalDocs={entries.length}
-                totalStamps={totalStamps}
-                totalPages={totalPages}
-                totalSize={formatBytes(totalSize)}
-                anyAnalyzing={anyAnalyzing}
-                isProcessing={isProcessing}
-                onProcess={handleProcess}
-                onPrint={handlePrint}
-                settings={settings}
-              />
-            </ScrollArea>
-          )}
+
         </div>
       </div>
 
