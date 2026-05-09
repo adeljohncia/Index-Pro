@@ -310,6 +310,79 @@ export async function processAndMergePdfs(
   return new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
 }
 
+/**
+ * Parse a page-range string like "1-3, 5, 7-9" into a sorted array of
+ * 1-indexed page numbers, clamped to [1, totalPages].
+ * Throws on malformed input.
+ */
+export function parsePagesRange(rangeStr: string, totalPages: number): number[] {
+  const pages = new Set<number>();
+  const parts = rangeStr.split(',').map((s) => s.trim()).filter(Boolean);
+  for (const part of parts) {
+    if (/^\d+$/.test(part)) {
+      const n = parseInt(part, 10);
+      if (n >= 1 && n <= totalPages) pages.add(n);
+    } else if (/^\d+-\d+$/.test(part)) {
+      const [a, b] = part.split('-').map(Number);
+      if (a > b) throw new Error(`Invalid range ${part}`);
+      for (let i = Math.max(1, a); i <= Math.min(totalPages, b); i++) pages.add(i);
+    } else {
+      throw new Error(`Invalid token: "${part}"`);
+    }
+  }
+  return [...pages].sort((a, b) => a - b);
+}
+
+/**
+ * Extract specific pages from a PDF and return a new Blob.
+ */
+export async function splitPdf(file: File, pages: number[]): Promise<Blob> {
+  const arrayBuffer = await file.arrayBuffer();
+  const sourceDoc = await PDFDocument.load(arrayBuffer);
+  const newDoc = await PDFDocument.create();
+  const zeroIndexed = pages.map((p) => p - 1).filter((i) => i >= 0 && i < sourceDoc.getPageCount());
+  const copied = await newDoc.copyPages(sourceDoc, zeroIndexed);
+  copied.forEach((p) => newDoc.addPage(p));
+  const pdfBytes = await newDoc.save();
+  return new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
+}
+
+/**
+ * Render PDF pages to image data URLs (for convert feature).
+ * Returns array of { pageNumber, dataUrl } in the requested format/quality.
+ */
+export async function pdfPagesToImages(
+  file: File,
+  format: 'jpg' | 'png',
+  quality = 0.9,
+  pageNumbers?: number[],
+  onProgress?: (page: number, total: number) => void
+): Promise<{ pageNumber: number; dataUrl: string }[]> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const pages = pageNumbers ?? Array.from({ length: pdf.numPages }, (_, i) => i + 1);
+  const results: { pageNumber: number; dataUrl: string }[] = [];
+
+  for (let i = 0; i < pages.length; i++) {
+    const pn = pages[i];
+    const page = await pdf.getPage(pn);
+    const scale = 2.0;
+    const viewport = page.getViewport({ scale });
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const ctx = canvas.getContext('2d')!;
+    // White background for jpg
+    if (format === 'jpg') { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+    await page.render({ canvasContext: ctx, viewport, canvas }).promise;
+    const mimeType = format === 'jpg' ? 'image/jpeg' : 'image/png';
+    results.push({ pageNumber: pn, dataUrl: canvas.toDataURL(mimeType, quality) });
+    onProgress?.(i + 1, pages.length);
+  }
+
+  return results;
+}
+
 export function generatePrintTemplateHtml(
   entries: Array<{ fileName: string; mainCode: string; pages: PageAnalysis[] }>
 ): string {

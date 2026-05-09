@@ -4,7 +4,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   FileText, Download, Printer, Loader2, Eye,
-  LayoutGrid, Settings2, FolderOpen, Menu, X,
+  LayoutGrid, Settings2, Wrench, Menu, X,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -15,11 +15,12 @@ import {
 
 import { DashboardTab } from './tab-dashboard';
 import { PdfEditorTab } from './tab-pdf-editor';
+import { PdfToolsTab } from './tab-pdf-tools';
 import { IndexEditorTab } from './tab-index-editor';
 import { ExportTab } from './tab-export';
 
 /* ─── Types ─────────────────────────────────────────────────────────────── */
-type AppTab = 'dashboard' | 'pdf-editor' | 'index-editor' | 'export';
+type AppTab = 'dashboard' | 'pdf-editor' | 'pdf-tools' | 'index-editor' | 'export';
 
 function uid() { return Math.random().toString(36).substring(2, 9); }
 function formatBytes(b: number) {
@@ -58,6 +59,7 @@ function buildMainCode(prefix: string, num: number) {
 const NAV_ITEMS: { tab: AppTab; icon: React.ElementType; label: string; shortLabel: string }[] = [
   { tab: 'dashboard',    icon: LayoutGrid, label: 'Dashboard',    shortLabel: 'Home' },
   { tab: 'pdf-editor',   icon: FileText,   label: 'PDF Editor',   shortLabel: 'Editor' },
+  { tab: 'pdf-tools',    icon: Wrench,     label: 'PDF Tools',    shortLabel: 'Tools' },
   { tab: 'index-editor', icon: Settings2,  label: 'Index Editor', shortLabel: 'Index' },
   { tab: 'export',       icon: Download,   label: 'Export Hub',   shortLabel: 'Export' },
 ];
@@ -183,6 +185,7 @@ function TopBar({
   const subtitles: Record<AppTab, string> = {
     dashboard: 'Overview of your documents and workflow',
     'pdf-editor': 'Rotate, delete pages and extract text',
+    'pdf-tools': 'Merge, split and convert PDF documents',
     'index-editor': 'Configure stamp codes, margins and typography',
     export: 'Download your stamped PDF',
   };
@@ -405,6 +408,10 @@ export function IndexerHome() {
               setIsDragging={setIsDragging}
               onDrop={handleDrop}
             />
+          )}
+
+          {activeTab === 'pdf-tools' && (
+            <PdfToolsTab />
           )}
 
           {activeTab === 'index-editor' && (
