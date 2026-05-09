@@ -1,45 +1,58 @@
-# [Project name]
+# Index Pro
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A PDF document indexing system that stamps index codes (e.g. `<A1>`, `<A1-1>`, `<A1-1-1>`) onto scanned PDF pages. Fully responsive across desktop, tablet, and mobile.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `pnpm --filter @workspace/pdf-indexer run dev` — run the web app (port 23735, preview path `/`)
+- `pnpm --filter @workspace/pdf-indexer run typecheck` — typecheck the app
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080, preview path `/api`)
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- React + Vite + Tailwind CSS v4 + shadcn/ui
+- pdfjs-dist (PDF parsing + thumbnails), pdf-lib (PDF stamping + page edits)
+- tesseract.js (OCR for scanned pages)
+- wouter (routing)
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+```
+artifacts/pdf-indexer/src/
+  pages/
+    indexer-home.tsx      — main shell: responsive sidebar/bottom-nav, tab routing, shared state
+    tab-dashboard.tsx     — Dashboard tab (stats, quick actions, workflow guide)
+    tab-pdf-editor.tsx    — PDF Editor tab (page thumbnails, rotate, delete, OCR, text extract)
+    tab-index-editor.tsx  — Index Editor tab (stamp settings, format levels, page analysis table)
+    tab-export.tsx        — Export Hub tab (apply stamps, download, print template)
+  lib/
+    pdf-utils.ts          — all PDF logic: analyze, thumbnail, stamp, OCR, text extract
+```
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- All 4 tabs share a single state tree in `IndexerHome` (entries, settings, overrides) — avoids complex context/stores.
+- Responsive layout: fixed sidebar (lg+, collapsible), bottom navigation bar (< lg).
+- OCR uses tesseract.js dynamically imported — not in initial bundle, loaded on first OCR call.
+- Format levels (level1/level2/level3) are independent booleans, not an enum — supports all 7 non-empty combinations.
+- Page analysis (blank detection) uses pixel stddev on a low-res canvas render; threshold = 5.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- **Dashboard** — overview stats and quick navigation
+- **PDF Editor** — view page thumbnails, rotate pages visually, mark pages for deletion, extract embedded text (pdfjs), run OCR (tesseract.js) on scanned pages
+- **Index Editor** — configure stamp prefix, start number, three independent format levels (`<A1>`, `<A1-1>`, `<A1-1-1>`), margins, typography; live preview of codes; per-page override editing
+- **Export Hub** — review full configuration, download stamped PDF, generate print overlay template
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- App name: Index Pro (not "Index Stamper")
+- Tab names: Dashboard / PDF Editor / Index Editor / Export Hub
+- Fully responsive — mobile-first, works on all iPhone and Android screen sizes
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
-
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- Tesseract.js downloads language data (~7 MB) on first OCR call — show a progress indicator.
+- `pdfjs-dist` worker must be resolved via `new URL(..., import.meta.url)` for Vite compatibility.
+- Always run `pnpm --filter @workspace/pdf-indexer run typecheck` before publishing.

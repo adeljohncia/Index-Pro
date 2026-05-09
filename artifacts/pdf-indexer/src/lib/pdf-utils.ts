@@ -1,5 +1,5 @@
 import * as pdfjsLib from 'pdfjs-dist';
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { PDFDocument, StandardFonts, rgb, degrees } from 'pdf-lib';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.mjs',
@@ -12,10 +12,6 @@ export interface PageAnalysis {
   assignedIndex: string | null;
 }
 
-/**
- * Render each page of a PDF as a thumbnail data URL (JPEG, small scale).
- * onProgress(index, total) called after each page.
- */
 export async function generateThumbnails(
   file: File,
   onProgress?: (idx: number, total: number) => void
@@ -38,6 +34,23 @@ export async function generateThumbnails(
   }
 
   return thumbnails;
+}
+
+export async function generateThumbnailForPage(
+  file: File,
+  pageNumber: number,
+  scale = 0.35
+): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const page = await pdf.getPage(pageNumber);
+  const viewport = page.getViewport({ scale });
+  const canvas = document.createElement('canvas');
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  const context = canvas.getContext('2d', { willReadFrequently: true })!;
+  await page.render({ canvasContext: context, viewport, canvas }).promise;
+  return canvas.toDataURL('image/jpeg', 0.8);
 }
 
 export async function analyzePdfPages(file: File): Promise<PageAnalysis[]> {
@@ -76,20 +89,107 @@ export async function analyzePdfPages(file: File): Promise<PageAnalysis[]> {
   return analysis;
 }
 
-/**
- * Three independently-togglable format levels.
- *
- *  level1  — first content page gets bare mainCode              e.g. <A1>
- *  level2  — sub-pages get mainCode-N (N = 1, 2, 3 …)          e.g. <A1-1>
- *  level3  — deep sub-pages get mainCode-1-N (N = 1, 2, 3 …)   e.g. <A1-1-1>
- *
- * Rules for page assignment:
- *  • level1 uses exactly 1 page (the very first content page), if enabled.
- *  • level2 uses exactly 1 page (the next content page after level1), if BOTH
- *    level2 AND level3 are enabled; otherwise it consumes all remaining pages.
- *  • level3 consumes all remaining pages, if enabled.
- *  • If only one level is enabled, it consumes every content page.
- */
+/** Extract embedded text from a PDF page using pdfjs text layer */
+export async function extractTextFromPage(file: File, pageNumber: number): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const page = await pdf.getPage(pageNumber);
+  const textContent = await page.getTextContent();
+  return textContent.items
+    .map((item) => ('str' in item ? item.str : ''))
+    .join(' ')
+    .trim();
+}
+
+/** Extract text from all pages of a PDF */
+export async function extractAllText(
+  file: File,
+  onProgress?: (page: number, total: number) => void
+): Promise<string[]> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const results: string[] = [];
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    const text = textContent.items
+      .map((item) => ('str' in item ? item.str : ''))
+      .join(' ')
+      .trim();
+    results.push(text);
+    onProgress?.(i, pdf.numPages);
+  }
+  return results;
+}
+
+/** Run OCR on an image data URL using Tesseract.js */
+export async function ocrImageDataUrl(
+  dataUrl: string,
+  onProgress?: (pct: number) => void
+): Promise<string> {
+  const { createWorker } = await import('tesseract.js');
+  const worker = await createWorker('eng', 1, {
+    logger: (m: { progress: number }) => {
+      if (m.progress !== undefined) onProgress?.(Math.round(m.progress * 100));
+    },
+  });
+  const { data } = await worker.recognize(dataUrl);
+  await worker.terminate();
+  return data.text.trim();
+}
+
+/** Render a PDF page to a high-res canvas data URL for OCR */
+export async function renderPageForOcr(file: File, pageNumber: number): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const page = await pdf.getPage(pageNumber);
+  const scale = 2.0;
+  const viewport = page.getViewport({ scale });
+  const canvas = document.createElement('canvas');
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  const context = canvas.getContext('2d')!;
+  await page.render({ canvasContext: context, viewport, canvas }).promise;
+  return canvas.toDataURL('image/png');
+}
+
+/** Apply page modifications (rotation, deletion, reorder) and return a new File */
+export async function applyPageModifications(
+  file: File,
+  options: {
+    pageRotations?: Record<number, number>; // 1-indexed pageNum -> extra degrees (90/180/270)
+    deletedPages?: Set<number>;             // 1-indexed page numbers to remove
+    pageOrder?: number[];                   // 1-indexed pages in new order
+  }
+): Promise<File> {
+  const arrayBuffer = await file.arrayBuffer();
+  const sourceDoc = await PDFDocument.load(arrayBuffer);
+  const newDoc = await PDFDocument.create();
+
+  const totalPages = sourceDoc.getPageCount();
+  const order = options.pageOrder ?? Array.from({ length: totalPages }, (_, i) => i + 1);
+  const deleted = options.deletedPages ?? new Set<number>();
+  const rotations = options.pageRotations ?? {};
+
+  const filtered = order.filter((pn) => !deleted.has(pn));
+  const zeroIndexed = filtered.map((pn) => pn - 1);
+  const copied = await newDoc.copyPages(sourceDoc, zeroIndexed);
+
+  for (let i = 0; i < copied.length; i++) {
+    const page = copied[i];
+    const originalPn = filtered[i];
+    const extraRot = rotations[originalPn] ?? 0;
+    if (extraRot !== 0) {
+      const current = page.getRotation().angle;
+      page.setRotation(degrees(current + extraRot));
+    }
+    newDoc.addPage(page);
+  }
+
+  const pdfBytes = await newDoc.save();
+  return new File([pdfBytes.buffer as ArrayBuffer], file.name, { type: 'application/pdf' });
+}
+
 export interface FormatLevels {
   level1: boolean;
   level2: boolean;
@@ -98,10 +198,6 @@ export interface FormatLevels {
 
 export const DEFAULT_FORMAT_LEVELS: FormatLevels = { level1: true, level2: true, level3: false };
 
-/**
- * Given a mainCode, 0-based contentIndex (among non-blank pages), and active
- * format levels, returns the stamp string for that page.
- */
 export function codeForContentPage(
   mainCode: string,
   contentIndex: number,
@@ -110,39 +206,29 @@ export function codeForContentPage(
   const base = mainCode.endsWith('>') ? mainCode.slice(0, -1) : mainCode;
   let consumed = 0;
 
-  // ── Level 1: bare mainCode, exactly 1 page ────────────────────────────
   if (levels.level1) {
     if (contentIndex === consumed) return mainCode;
     consumed++;
   }
 
-  // ── Level 2 ───────────────────────────────────────────────────────────
   if (levels.level2) {
     if (!levels.level3) {
-      // Level 2 takes all remaining pages → sequential counter
       const n = contentIndex - consumed + 1;
       return `${base}-${n}>`;
     } else {
-      // Level 2 takes exactly 1 page (the "bridge" sub-item)
       if (contentIndex === consumed) return `${base}-1>`;
       consumed++;
     }
   }
 
-  // ── Level 3: all remaining pages ─────────────────────────────────────
   if (levels.level3) {
     const n = contentIndex - consumed + 1;
     return `${base}-1-${n}>`;
   }
 
-  // Fallback (no levels enabled): repeat mainCode
   return mainCode;
 }
 
-/**
- * Compute assigned index codes for pages of a single PDF.
- * overrides: { pageNumber -> custom code (empty string = skip/null) }
- */
 export function computeAttachmentIndices(
   pages: PageAnalysis[],
   mainCode: string,
@@ -167,20 +253,16 @@ export function computeAttachmentIndices(
 
 export interface PdfEntryForProcessing {
   file: File;
-  pages: PageAnalysis[]; // with assignedIndex already computed
+  pages: PageAnalysis[];
 }
 
 export interface ProcessingOptions {
-  topMarginCm?: number;   // default 0.5
-  sideMarginCm?: number;  // default 0.5
-  fontSize?: number;      // default 16
-  bold?: boolean;         // default false
+  topMarginCm?: number;
+  sideMarginCm?: number;
+  fontSize?: number;
+  bold?: boolean;
 }
 
-/**
- * Merge multiple PDFs into one, stamping index codes onto each page.
- * Odd/even is determined per-PDF (page 1 of each PDF is always odd = top-left).
- */
 export async function processAndMergePdfs(
   entries: PdfEntryForProcessing[],
   options: ProcessingOptions = {}
@@ -215,7 +297,7 @@ export async function processAndMergePdfs(
       const { width, height } = copiedPage.getSize();
       const text = pageAnalysis.assignedIndex;
       const textWidth = helveticaFont.widthOfTextAtSize(text, fontSize);
-      const isOdd = (i + 1) % 2 !== 0; // local page number within PDF
+      const isOdd = (i + 1) % 2 !== 0;
 
       const x = isOdd ? marginSidePt : width - marginSidePt - textWidth;
       const y = height - marginTopPt - fontSize;

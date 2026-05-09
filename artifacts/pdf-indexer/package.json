@@ -76,6 +76,7 @@
   },
   "dependencies": {
     "pdf-lib": "^1.17.1",
-    "pdfjs-dist": "^5.7.284"
+    "pdfjs-dist": "^5.7.284",
+    "tesseract.js": "^7.0.0"
   }
 }
