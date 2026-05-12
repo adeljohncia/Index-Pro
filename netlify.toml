@@ -1,0 +1,9 @@
+[build]
+  command = "corepack pnpm install --no-frozen-lockfile && corepack pnpm run build:pdf-indexer"
+  publish = "artifacts/pdf-indexer/dist/public"
+  environment = { NODE_VERSION = "24" }
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
