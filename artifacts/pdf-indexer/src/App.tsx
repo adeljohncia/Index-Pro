@@ -11,6 +11,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={IndexerHome} />
+      <Route path="/converter" component={IndexerHome} />
       <Route component={NotFound} />
     </Switch>
   );

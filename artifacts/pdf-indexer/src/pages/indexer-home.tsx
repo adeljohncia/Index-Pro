@@ -4,7 +4,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   FileText, Download, Printer, Loader2, Eye,
-  LayoutGrid, Settings2, Wrench, Menu, X,
+  LayoutGrid, Settings2, Wrench, Menu, X, FileOutput,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -16,9 +16,10 @@ import {
 import { DashboardTab } from './tab-dashboard';
 import { PdfToolsTab } from './tab-pdf-tools';
 import { IndexEditorTab } from './tab-index-editor';
+import { ConverterPage } from '@/features/converter/pages/converter-page';
 
 /* ─── Types ─────────────────────────────────────────────────────────────── */
-type AppTab = 'dashboard' | 'pdf-tools' | 'index-editor';
+type AppTab = 'dashboard' | 'pdf-tools' | 'index-editor' | 'converter';
 
 function uid() { return Math.random().toString(36).substring(2, 9); }
 function formatBytes(b: number) {
@@ -57,6 +58,7 @@ function buildMainCode(prefix: string, num: number) {
 const NAV_ITEMS: { tab: AppTab; icon: React.ElementType; label: string; shortLabel: string }[] = [
   { tab: 'dashboard',    icon: LayoutGrid, label: 'Dashboard',    shortLabel: 'Home' },
   { tab: 'pdf-tools',    icon: Wrench,     label: 'PDF Tools',    shortLabel: 'Tools' },
+  { tab: 'converter',    icon: FileOutput, label: 'Convert & Edit', shortLabel: 'Convert' },
   { tab: 'index-editor', icon: Settings2,  label: 'Index Editor', shortLabel: 'Index' },
 ];
 
@@ -181,6 +183,7 @@ function TopBar({
   const subtitles: Record<AppTab, string> = {
     dashboard: 'Overview of your documents and workflow',
     'pdf-tools': 'Merge, split and convert PDF documents',
+    converter: 'OCR PDFs into editable DOCX, XLSX, PPTX and structured data',
     'index-editor': 'Configure stamp codes, margins and typography',
   };
 
@@ -233,7 +236,9 @@ export function IndexerHome() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [activeTab, setActiveTab] = useState<AppTab>('dashboard');
+  const [activeTab, setActiveTabState] = useState<AppTab>(() =>
+    window.location.pathname.endsWith('/converter') ? 'converter' : 'dashboard',
+  );
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const [entries, setEntries] = useState<PdfEntry[]>([]);
@@ -259,6 +264,14 @@ export function IndexerHome() {
   const totalPages  = useMemo(() => entries.reduce((s, e) => s + e.pages.length, 0), [entries]);
   const totalSize   = useMemo(() => entries.reduce((s, e) => s + e.file.size, 0), [entries]);
   const anyAnalyzing = entries.some((e) => e.isAnalyzing);
+
+  const setActiveTab = useCallback((tab: AppTab) => {
+    setActiveTabState(tab);
+    const nextPath = tab === 'converter' ? '/converter' : '/';
+    if (window.location.pathname !== nextPath) {
+      window.history.replaceState(null, '', `${import.meta.env.BASE_URL.replace(/\/$/, '')}${nextPath}`);
+    }
+  }, []);
 
   /* ── File loading ─────────────────────────────────────────────────────── */
   const loadEntry = useCallback(async (entry: PdfEntry) => {
@@ -395,6 +408,10 @@ export function IndexerHome() {
 
           {activeTab === 'pdf-tools' && (
             <PdfToolsTab />
+          )}
+
+          {activeTab === 'converter' && (
+            <ConverterPage />
           )}
 
           {activeTab === 'index-editor' && (
