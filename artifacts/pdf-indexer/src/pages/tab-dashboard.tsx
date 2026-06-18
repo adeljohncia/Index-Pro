@@ -33,9 +33,9 @@ export function DashboardTab({
       action: () => onNavigate('index-editor'), primary: false,
     },
     {
-      icon: FileText, label: 'PDF Editor',
-      desc: 'Rotate, delete and extract text',
-      action: () => onNavigate('pdf-editor'), primary: false,
+      icon: FileText, label: 'PDF Tools',
+      desc: 'Merge, split and convert PDFs',
+      action: () => onNavigate('pdf-tools'), primary: false,
     },
     {
       icon: Download, label: 'Export Hub',
