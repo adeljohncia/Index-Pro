@@ -1,5 +1,5 @@
 import * as pdfjsLib from 'pdfjs-dist';
-import { OcrTextRun } from '../types';
+import { ConverterLanguage, OcrTextRun } from '../types';
 import BackendOCRService from './backend-ocr-service';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
@@ -76,16 +76,20 @@ async function extractNativePageText(
     if ('str' in item) {
       const text = item.str.trim();
       if (text) {
+        const itemAny = item as { x?: number; y?: number; transform?: number[]; width?: number; height?: number };
+        const itemX = itemAny.x ?? itemAny.transform?.[4] ?? 0;
+        const itemY = itemAny.y ?? itemAny.transform?.[5] ?? 0;
+
         runs.push({
           id: `native-${itemIndex}`,
           text,
           box: {
-            x: item.x || 0,
-            y: viewport.height - (item.y || 0),
-            width: item.width || text.length * 5,
-            height: item.height || 12,
+            x: itemX,
+            y: viewport.height - itemY,
+            width: itemAny.width || text.length * 5,
+            height: itemAny.height || 12,
           },
-          fontSize: Math.max(8, Math.round(item.height || 12)),
+          fontSize: Math.max(8, Math.round(itemAny.height || 12)),
           fontFamily: 'PDF native',
           confidence: 95,
           language: 'unknown',
@@ -371,7 +375,7 @@ export async function generateTableOfContents(
                 fontSize: 12,
                 fontFamily: 'OCR',
                 confidence: response.confidence || 80,
-                language: response.language || 'unknown',
+                language: (response.language || 'unknown') as ConverterLanguage | 'unknown',
               }];
             }
           } catch (error) {

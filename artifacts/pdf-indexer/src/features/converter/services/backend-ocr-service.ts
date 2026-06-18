@@ -144,6 +144,18 @@ class BackendOCRService {
     }
   }
 
+  async ocrImage(imageDataUrl: string, languages: string[] = ['eng']): Promise<{ text: string; confidence?: number; language?: string }> {
+    const blob = await (await fetch(imageDataUrl)).blob();
+    const file = new File([blob], 'ocr-image.png', { type: blob.type });
+    const result = await this.analyzeImage(file);
+
+    return {
+      text: result?.text || '',
+      confidence: result?.confidence,
+      language: result?.language || languages[0] || 'unknown',
+    };
+  }
+
   /**
    * Analyze page layout
    */
