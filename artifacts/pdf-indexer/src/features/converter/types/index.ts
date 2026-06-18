@@ -86,6 +86,7 @@ export interface OcrPage {
   images: OcrImageObject[];
   confidence: number;
   plainText: string;
+  columns?: number[]; // Column boundaries for multi-column layouts
 }
 
 export interface ConverterLayoutSchema {
@@ -101,6 +102,7 @@ export interface ConverterLayoutSchema {
     detectedLanguages: string[];
     hasTables: boolean;
     hasImages: boolean;
+    hasColumns: boolean;
     warnings: string[];
   };
 }

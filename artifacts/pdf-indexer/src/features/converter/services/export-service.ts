@@ -21,6 +21,48 @@ function pageText(page: OcrPage) {
     .trim();
 }
 
+function groupTextRunsByColumns(textRuns: any[], columns: number[]): any[][] {
+  const columnGroups: any[][] = columns.slice(0, -1).map(() => []);
+  
+  for (const run of textRuns) {
+    const columnIndex = columns.findIndex((col, index) => 
+      run.box.x >= col && (index === columns.length - 1 || run.box.x < columns[index + 1])
+    );
+    if (columnIndex >= 0 && columnIndex < columnGroups.length) {
+      columnGroups[columnIndex].push(run);
+    }
+  }
+  
+  return columnGroups.filter(group => group.length > 0);
+}
+
+function groupIntoParagraphs(textRuns: any[]): any[][] {
+  const sorted = [...textRuns].sort((a, b) => a.box.y - b.box.y || a.box.x - b.box.x);
+  const paragraphs: any[][] = [];
+  
+  for (const run of sorted) {
+    const lastPara = paragraphs[paragraphs.length - 1];
+    if (lastPara && Math.abs(lastPara[0].box.y - run.box.y) < 20) { // Same line
+      lastPara.push(run);
+    } else {
+      paragraphs.push([run]);
+    }
+  }
+  
+  return paragraphs;
+}
+
+function getRunStyle(run: any): string {
+  let style = '';
+  if (run.bold) style += '<w:b/>';
+  if (run.italic) style += '<w:i/>';
+  if (run.fontSize) {
+    const size = Math.round(run.fontSize * 2); // Half-points
+    style += `<w:sz w:val="${size}"/><w:szCs w:val="${size}"/>`;
+  }
+  return style ? `<w:rPr>${style}</w:rPr>` : '';
+}
+
 function contentTypes(extra = '') {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
@@ -43,12 +85,36 @@ async function exportDocx(layout: ConverterLayoutSchema): Promise<Blob> {
   zip.folder('_rels')?.file('.rels', rels('http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument', 'word/document.xml'));
 
   const body = layout.pages.map((page) => {
-    const paragraphs = pageText(page)
-      .split(/\n+/)
-      .filter(Boolean)
-      .map((text) => `<w:p><w:r><w:t xml:space="preserve">${escapeXml(text)}</w:t></w:r></w:p>`)
-      .join('');
+    let pageContent = `<w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Page ${page.pageNumber}</w:t></w:r></w:p>`;
 
+    // Handle multi-column layout
+    if (page.columns && page.columns.length > 2) {
+      const columnGroups = groupTextRunsByColumns(page.textRuns, page.columns);
+      const columnWidth = Math.floor(11906 / (page.columns.length - 1)); // Page width in twips
+      
+      pageContent += columnGroups.map((columnRuns, colIndex) => {
+        const paragraphs = groupIntoParagraphs(columnRuns);
+        return paragraphs.map(para => {
+          const runs = para.map(run => {
+            const style = getRunStyle(run);
+            return `<w:r${style}><w:t xml:space="preserve">${escapeXml(run.text)}</w:t></w:r>`;
+          }).join('');
+          return `<w:p><w:r>${runs}</w:r></w:p>`;
+        }).join('');
+      }).join('');
+    } else {
+      // Single column layout
+      const paragraphs = groupIntoParagraphs(page.textRuns);
+      pageContent += paragraphs.map(para => {
+        const runs = para.map(run => {
+          const style = getRunStyle(run);
+          return `<w:r${style}><w:t xml:space="preserve">${escapeXml(run.text)}</w:t></w:r>`;
+        }).join('');
+        return `<w:p><w:r>${runs}</w:r></w:p>`;
+      }).join('');
+    }
+
+    // Add tables
     const tables = page.tables.map((table) => {
       const rows = Array.from({ length: table.rowCount }, (_, rowIndex) => {
         const cells = Array.from({ length: table.columnCount }, (_, columnIndex) => {
@@ -60,7 +126,10 @@ async function exportDocx(layout: ConverterLayoutSchema): Promise<Blob> {
       return `<w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/><w:tblBorders><w:top w:val="single" w:sz="4"/><w:left w:val="single" w:sz="4"/><w:bottom w:val="single" w:sz="4"/><w:right w:val="single" w:sz="4"/><w:insideH w:val="single" w:sz="4"/><w:insideV w:val="single" w:sz="4"/></w:tblBorders></w:tblPr>${rows}</w:tbl>`;
     }).join('');
 
-    return `<w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Page ${page.pageNumber}</w:t></w:r></w:p>${paragraphs}${tables}<w:p><w:r><w:br w:type="page"/></w:r></w:p>`;
+    pageContent += tables;
+    pageContent += '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+
+    return pageContent;
   }).join('');
 
   zip.folder('word')?.file('document.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>

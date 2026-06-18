@@ -13,6 +13,39 @@ function overlap(a: LayoutBox, b: LayoutBox) {
   return Math.max(0, right - left);
 }
 
+function detectColumns(textRuns: OcrTextRun[], pageWidth: number): number[] {
+  const sortedRuns = [...textRuns].sort((a, b) => a.box.x - b.box.x);
+  const columnBreaks: number[] = [];
+  
+  for (let i = 0; i < sortedRuns.length - 1; i++) {
+    const current = sortedRuns[i];
+    const next = sortedRuns[i + 1];
+    const gap = next.box.x - (current.box.x + current.box.width);
+    
+    // If gap is significant (more than 2 inches at typical DPI), it's a column break
+    if (gap > 144) { // 2 inches at 72 DPI
+      columnBreaks.push(current.box.x + current.box.width + gap / 2);
+    }
+  }
+  
+  return [0, ...columnBreaks, pageWidth];
+}
+
+function groupIntoColumns(textRuns: OcrTextRun[], columns: number[]): OcrTextRun[][] {
+  const columnGroups: OcrTextRun[][] = columns.slice(0, -1).map(() => []);
+  
+  for (const run of textRuns) {
+    const columnIndex = columns.findIndex((col, index) => 
+      run.box.x >= col && (index === columns.length - 1 || run.box.x < columns[index + 1])
+    );
+    if (columnIndex >= 0 && columnIndex < columnGroups.length) {
+      columnGroups[columnIndex].push(run);
+    }
+  }
+  
+  return columnGroups.filter(group => group.length > 0);
+}
+
 function groupRows(runs: OcrTextRun[]) {
   const sorted = [...runs].sort((a, b) => a.box.y - b.box.y || a.box.x - b.box.x);
   const rows: OcrTextRun[][] = [];
@@ -77,7 +110,22 @@ export function reconstructLayout(
 ): ConverterLayoutSchema {
   const enrichedPages = pages.map((page) => {
     const tables = settings.preserveTables ? detectTables(page.textRuns) : [];
-    return { ...page, tables };
+    
+    // Detect columns for better layout preservation
+    const columns = detectColumns(page.textRuns, page.width);
+    const columnGroups = groupIntoColumns(page.textRuns, columns);
+    
+    // Sort text runs by reading order (top to bottom, left to right within columns)
+    const sortedTextRuns = columnGroups.flatMap(group => 
+      groupRows(group).flat()
+    );
+    
+    return { 
+      ...page, 
+      textRuns: sortedTextRuns,
+      tables,
+      columns: columns.length > 2 ? columns : undefined, // Only include if multi-column
+    };
   });
 
   const confidences = enrichedPages.flatMap((page) => page.textRuns.map((run) => run.confidence));
@@ -98,6 +146,7 @@ export function reconstructLayout(
       detectedLanguages: settings.languages,
       hasTables: enrichedPages.some((page) => page.tables.length > 0),
       hasImages: enrichedPages.some((page) => page.images.length > 0),
+      hasColumns: enrichedPages.some((page) => page.columns && page.columns.length > 2),
       warnings: [
         'Browser mode preserves editable text, page flow, tables, and page thumbnails. Cloud OCR backends can be connected through src/features/converter/api for higher fidelity.',
       ],

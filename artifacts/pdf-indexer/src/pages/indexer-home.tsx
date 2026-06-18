@@ -4,7 +4,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   FileText, Download, Printer, Loader2, Eye,
-  LayoutGrid, Settings2, Wrench, Menu, X, FileOutput,
+  LayoutGrid, Settings2, Wrench, Menu, X, FileOutput, ListOrdered,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -16,10 +16,11 @@ import {
 import { DashboardTab } from './tab-dashboard';
 import { PdfToolsTab } from './tab-pdf-tools';
 import { IndexEditorTab } from './tab-index-editor';
+import { TabTableOfContents } from './tab-table-of-contents';
 import { ConverterPage } from '@/features/converter/pages/converter-page';
 
 /* ─── Types ─────────────────────────────────────────────────────────────── */
-type AppTab = 'dashboard' | 'pdf-tools' | 'index-editor' | 'converter';
+type AppTab = 'dashboard' | 'pdf-tools' | 'index-editor' | 'converter' | 'toc-generator';
 
 function uid() { return Math.random().toString(36).substring(2, 9); }
 function formatBytes(b: number) {
@@ -59,8 +60,7 @@ const NAV_ITEMS: { tab: AppTab; icon: React.ElementType; label: string; shortLab
   { tab: 'dashboard',    icon: LayoutGrid, label: 'Dashboard',    shortLabel: 'Home' },
   { tab: 'pdf-tools',    icon: Wrench,     label: 'PDF Tools',    shortLabel: 'Tools' },
   { tab: 'converter',    icon: FileOutput, label: 'Convert & Edit', shortLabel: 'Convert' },
-  { tab: 'index-editor', icon: Settings2,  label: 'Index Editor', shortLabel: 'Index' },
-];
+  { tab: 'index-editor', icon: Settings2,  label: 'Index Editor', shortLabel: 'Index' },  { tab: 'toc-generator', icon: ListOrdered, label: 'Table of Contents', shortLabel: 'TOC' },];
 
 /* ─── Desktop Sidebar ───────────────────────────────────────────────────── */
 function DesktopSidebar({
@@ -185,6 +185,7 @@ function TopBar({
     'pdf-tools': 'Merge, split and convert PDF documents',
     converter: 'OCR PDFs into editable DOCX, XLSX, PPTX and structured data',
     'index-editor': 'Configure stamp codes, margins and typography',
+    'toc-generator': 'Auto-detect index codes and generate table of contents',
   };
 
   return (
@@ -431,6 +432,10 @@ export function IndexerHome() {
               fileInputRef={fileInputRef}
               onFileChange={handleFileChange}
             />
+          )}
+
+          {activeTab === 'toc-generator' && (
+            <TabTableOfContents />
           )}
 
 
