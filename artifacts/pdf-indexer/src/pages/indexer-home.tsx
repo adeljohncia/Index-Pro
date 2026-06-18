@@ -16,10 +16,11 @@ import {
 import { DashboardTab } from './tab-dashboard';
 import { PdfToolsTab } from './tab-pdf-tools';
 import { IndexEditorTab } from './tab-index-editor';
+import { PdfEditorTab } from './tab-pdf-editor';
 import { ConverterPage } from '@/features/converter/pages/converter-page';
 
 /* ─── Types ─────────────────────────────────────────────────────────────── */
-type AppTab = 'dashboard' | 'pdf-tools' | 'index-editor' | 'converter';
+type AppTab = 'dashboard' | 'pdf-tools' | 'pdf-editor' | 'index-editor' | 'converter';
 
 function uid() { return Math.random().toString(36).substring(2, 9); }
 function formatBytes(b: number) {
@@ -59,7 +60,8 @@ const NAV_ITEMS: { tab: AppTab; icon: React.ElementType; label: string; shortLab
   { tab: 'dashboard',    icon: LayoutGrid, label: 'Dashboard',    shortLabel: 'Home' },
   { tab: 'pdf-tools',    icon: Wrench,     label: 'PDF Tools',    shortLabel: 'Tools' },
   { tab: 'converter',    icon: FileOutput, label: 'Convert & Edit', shortLabel: 'Convert' },
-  { tab: 'index-editor', icon: Settings2,  label: 'Index Editor', shortLabel: 'Index' },];
+  { tab: 'pdf-editor',   icon: FileText,   label: 'PDF Editor',    shortLabel: 'Edit' },
+  { tab: 'index-editor', icon: Settings2,  label: 'Index Editor',  shortLabel: 'Index' },];
 
 /* ─── Desktop Sidebar ───────────────────────────────────────────────────── */
 function DesktopSidebar({
@@ -182,6 +184,7 @@ function TopBar({
   const subtitles: Record<AppTab, string> = {
     dashboard: 'Overview of your documents and workflow',
     'pdf-tools': 'Merge, split and convert PDF documents',
+    'pdf-editor': 'Edit and annotate PDF documents within the app',
     converter: 'OCR PDFs into editable DOCX, XLSX, PPTX and structured data',
     'index-editor': 'Configure stamp codes, margins and typography',
     
@@ -408,6 +411,17 @@ export function IndexerHome() {
 
           {activeTab === 'pdf-tools' && (
             <PdfToolsTab />
+          )}
+
+          {activeTab === 'pdf-editor' && (
+            <PdfEditorTab
+              entries={entries}
+              onAddFiles={handleOpenFiles}
+              fileInputRef={fileInputRef}
+              isDragging={isDragging}
+              setIsDragging={setIsDragging}
+              onDrop={handleDrop}
+            />
           )}
 
           {activeTab === 'converter' && (
