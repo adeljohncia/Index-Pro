@@ -15,7 +15,7 @@ import aiofiles
 import asyncio
 from pathlib import Path
 
-from converter import convert_pdf
+from converter import convert_pdf, convert_to_pdf
 from ocr_engine import run_advanced_ocr, analyze_layout
 
 # Configure logging
@@ -164,6 +164,48 @@ async def convert_document(
     except Exception as e:
         logger.error(f"Conversion failed: {e}")
         # Cleanup on error
+        try:
+            os.remove(str(file_path))
+        except:
+            pass
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/convert/to-pdf")
+async def convert_to_pdf_endpoint(
+    file: UploadFile = File(...),
+    background_tasks: BackgroundTasks = None
+):
+    """
+    Convert uploaded document or image to PDF.
+    """
+    try:
+        # Save uploaded file
+        file_path = UPLOAD_DIR / file.filename
+        async with aiofiles.open(file_path, 'wb') as f:
+            content = await file.read()
+            await f.write(content)
+
+        logger.info(f"Converting to PDF: {file.filename}")
+
+        output_filename = f"{Path(file.filename).stem}.pdf"
+        output_path = OUTPUT_DIR / output_filename
+
+        result = convert_to_pdf(str(file_path), str(output_path))
+
+        # Schedule cleanup of input file
+        if background_tasks:
+            background_tasks.add_task(os.remove, str(file_path))
+
+        return {
+            "success": True,
+            "input_file": file.filename,
+            "output_file": output_filename,
+            "download_url": f"/api/download/{output_filename}"
+        }
+
+    except Exception as e:
+        logger.error(f"Conversion to PDF failed: {e}")
         try:
             os.remove(str(file_path))
         except:

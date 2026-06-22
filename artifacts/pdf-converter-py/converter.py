@@ -23,6 +23,10 @@ from ocr_engine import run_advanced_ocr, group_text_by_lines, analyze_layout
 
 logger = logging.getLogger(__name__)
 
+from PIL import Image
+import subprocess
+import shutil
+
 
 # ========================================================
 # PDF TO DOCX
@@ -332,3 +336,98 @@ def convert_pdf(pdf_path: str, output_format: str, output_path: str = None) -> s
     
     else:
         raise ValueError(f"Unsupported format: {output_format}")
+
+
+# ========================================================
+# ANY/IMAGE/DOC -> PDF
+# ========================================================
+
+def convert_to_pdf(input_path: str, output_path: str = None) -> str:
+    """
+    Convert various input documents (images, office files) to PDF.
+
+    - Images (png, jpg, jpeg, tiff, bmp, gif) are converted with Pillow.
+    - Office documents (docx, pptx, xlsx, odt, ods, odp, etc.) are converted
+      using LibreOffice `soffice` if available.
+
+    Args:
+        input_path: Path to input file
+        output_path: Optional output PDF path
+
+    Returns:
+        Path to generated PDF file
+    """
+    try:
+        if not os.path.exists(input_path):
+            raise FileNotFoundError(f"Input not found: {input_path}")
+
+        ext = os.path.splitext(input_path)[1].lower()
+        image_exts = {'.png', '.jpg', '.jpeg', '.tiff', '.tif', '.bmp', '.gif'}
+
+        out_file = output_path or f"{uuid.uuid4()}.pdf"
+
+        # IMAGE -> PDF (supports multi-frame TIFF)
+        if ext in image_exts:
+            logger.info(f"Converting image to PDF: {input_path} -> {out_file}")
+            img = Image.open(input_path)
+
+            # Convert RGBA to RGB for PDF
+            def _ensure_rgb(im):
+                if im.mode in ("RGBA", "LA"):
+                    bg = Image.new("RGB", im.size, (255, 255, 255))
+                    bg.paste(im, mask=im.split()[-1])
+                    return bg
+                return im.convert("RGB")
+
+            if getattr(img, "is_animated", False) or getattr(img, "n_frames", 1) > 1:
+                frames = []
+                for i in range(getattr(img, "n_frames", 1)):
+                    img.seek(i)
+                    frames.append(_ensure_rgb(img.copy()))
+
+                frames[0].save(out_file, "PDF", save_all=True, append_images=frames[1:])
+            else:
+                rgb = _ensure_rgb(img)
+                rgb.save(out_file, "PDF")
+
+            logger.info(f"PDF saved to: {out_file}")
+            return out_file
+
+        # OFFICE/OTHER -> PDF via LibreOffice
+        else:
+            logger.info(f"Attempting to convert document to PDF using LibreOffice: {input_path}")
+            soffice = shutil.which("soffice")
+            if not soffice:
+                raise RuntimeError(
+                    "LibreOffice `soffice` not found. Install LibreOffice to enable document-to-PDF conversion."
+                )
+
+            # LibreOffice writes output into the specified outdir
+            outdir = os.path.abspath(os.path.dirname(out_file))
+            os.makedirs(outdir, exist_ok=True)
+
+            cmd = [soffice, "--headless", "--convert-to", "pdf", input_path, "--outdir", outdir]
+            logger.info(f"Running: {' '.join(cmd)}")
+            res = subprocess.run(cmd, capture_output=True, text=True)
+
+            if res.returncode != 0:
+                logger.error(res.stdout)
+                logger.error(res.stderr)
+                raise RuntimeError(f"LibreOffice conversion failed: {res.stderr.strip()}")
+
+            # LibreOffice will create a file with same stem but .pdf
+            generated = os.path.join(outdir, os.path.splitext(os.path.basename(input_path))[0] + ".pdf")
+
+            if not os.path.exists(generated):
+                raise RuntimeError("LibreOffice did not produce a PDF output as expected")
+
+            # Move/rename to requested output_path if necessary
+            if os.path.abspath(generated) != os.path.abspath(out_file):
+                os.replace(generated, out_file)
+
+            logger.info(f"PDF saved to: {out_file}")
+            return out_file
+
+    except Exception as e:
+        logger.error(f"Conversion to PDF failed: {e}")
+        raise
